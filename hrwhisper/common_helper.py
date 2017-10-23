@@ -4,6 +4,8 @@
 import abc
 from abc import ABC
 import collections
+
+import time
 from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
@@ -84,6 +86,8 @@ class ModelBase(object):
             X_train = sparse.hstack(vectors)
             y_train = train_data.loc[train_data['mall_id'] == mall_id]['shop_id']
 
+            print(X_train.shape, y_train.shape)
+
             vectors = []
             for func in vec_func:
                 vectors.append(func.test_data_to_vec(test_data, mall_id))
@@ -91,7 +95,6 @@ class ModelBase(object):
             X_test = sparse.hstack(vectors)
             assert X_test.shape[0] == len(test_data.loc[test_data['mall_id'] == mall_id])
 
-            print(X_train.shape, y_train.shape)
             print(X_test.shape)
             if has_test_label:
                 y_test = test_data.loc[test_data['mall_id'] == mall_id]['shop_id']
@@ -132,7 +135,7 @@ class ModelBase(object):
         test_data = read_test_data()
         ans = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, False)
 
-        with open('./res.csv', 'w') as f:
+        with open('./hrwhisper_res{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
             f.write('row_id,shop_id\n')
             for row_id in test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))
