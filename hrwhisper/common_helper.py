@@ -2,10 +2,10 @@
 # @Date    : 2017/10/21
 # @Author  : hrwhisper
 import abc
-from abc import ABC
 import collections
-
+import os
 import time
+
 from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
@@ -26,7 +26,7 @@ def train_test_split(X, y, test_size=0.2):
     return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
 
 
-class XXToVec(ABC):
+class XXToVec(abc.ABC):
     def __init__(self, feature_save_path, how_to_vec_save_path):
         self.FEATURE_SAVE_PATH = feature_save_path
         self.HOW_TO_VEC_SAVE_PATH = how_to_vec_save_path
@@ -135,7 +135,10 @@ class ModelBase(object):
         test_data = read_test_data()
         ans = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, False)
 
-        with open('./hrwhisper_res{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
+        _save_path = './result'
+        if not os.path.exists(_save_path):
+            os.mkdir(_save_path)
+        with open(_save_path + '/hrwhisper_res{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
             f.write('row_id,shop_id\n')
             for row_id in test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))

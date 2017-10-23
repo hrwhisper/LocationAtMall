@@ -8,8 +8,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-from hrwhisper.common_helper import trained_and_predict_location
-from hrwhisper.parse_data import read_test_data, read_train_data, read_mall_data
+from common_helper import trained_and_predict_location
+from parse_data import read_test_data, read_train_data, read_mall_data
 
 
 def train_test():
