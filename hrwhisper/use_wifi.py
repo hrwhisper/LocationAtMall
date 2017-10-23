@@ -7,8 +7,6 @@
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
-from sklearn import preprocessing
-from parse_data import read_train_data
 from common_helper import ModelBase, XXToVec
 
 
@@ -108,6 +106,7 @@ class UseWifi(ModelBase):
         return {
             'random forest': RandomForestClassifier(n_jobs=-1, n_estimators=100, random_state=self._random_state),
         }
+
 
 def train_test():
     task = UseWifi()

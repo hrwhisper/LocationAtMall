@@ -8,7 +8,7 @@ from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
-from parse_data import read_mall_data, read_train_data, read_test_data
+from parse_data import read_test_data, read_train_join_mall
 
 
 def trained_and_predict_location(cls, X_train, y_train, X_test):
@@ -117,9 +117,7 @@ class ModelBase(object):
         :return:
         """
         # ------input data -----------
-        mall_data = read_mall_data()
-        train_data = read_train_data()  # 1138015
-        train_data = train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
+        train_data = read_train_join_mall()
         train_data = train_data.sort_values(by='time_stamp')
         train_label = train_data['shop_id']
         train_data, test_data, _, _ = train_test_split(train_data, train_label, self._test_ratio)
@@ -130,9 +128,7 @@ class ModelBase(object):
             print("{} Mean: {}".format(name, score / cnt))
 
     def train_and_on_test_data(self, vec_func):
-        mall_data = read_mall_data()
-        train_data = read_train_data()  # 1138015
-        train_data = train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
+        train_data = read_train_join_mall()
         test_data = read_test_data()
         ans = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, False)
 

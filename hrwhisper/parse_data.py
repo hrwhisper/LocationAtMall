@@ -20,6 +20,12 @@ def read_test_data():
     return test_data
 
 
+def read_train_join_mall():
+    mall_data = read_mall_data()
+    train_data = read_train_data()  # 1138015
+    return train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
+
+
 if __name__ == '__main__':
     mall_data = read_mall_data()
     train_data = read_train_data()
