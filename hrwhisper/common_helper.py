@@ -63,7 +63,7 @@ class ModelBase(object):
 
     def _get_classifiers(self):
         """
-        :return: dict. {name:classifer}
+        :return: dict. {name:classifier}
         """
         return {
             'random forest': RandomForestClassifier(n_jobs=3, n_estimators=100, random_state=self._random_state),
