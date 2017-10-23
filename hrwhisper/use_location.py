@@ -31,7 +31,7 @@ class LocationToVec(XXToVec):
                 data.extend([log, lat])
                 indptr.append(len(indices))
 
-            features = csr_matrix((data, indices, indptr), dtype=int)
+            features = csr_matrix((data, indices, indptr))
             if should_save:
                 joblib.dump(features, self.FEATURE_SAVE_PATH.format('train', mall_id))
         else:
@@ -49,7 +49,7 @@ class LocationToVec(XXToVec):
                 data.extend([log, lat])
                 indptr.append(len(indices))
 
-            features = csr_matrix((data, indices, indptr), dtype=int)
+            features = csr_matrix((data, indices, indptr))
             if should_save:
                 joblib.dump(features, self.FEATURE_SAVE_PATH.format('test', mall_id))
         else:
