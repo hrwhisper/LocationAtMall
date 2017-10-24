@@ -124,7 +124,7 @@ class UseLoc(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=100, random_state=self._random_state),
+            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state, class_weight='balanced'),
         }
 
 

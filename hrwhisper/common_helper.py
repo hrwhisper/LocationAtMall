@@ -66,7 +66,8 @@ class ModelBase(object):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=100, random_state=self._random_state),
+            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state,
+                                                    class_weight='balanced'),
         }
 
     def _trained_by_mall_and_predict(self, vec_func, train_data, test_data, mall_id, has_test_label=True):
@@ -100,7 +101,7 @@ class ModelBase(object):
             if has_test_label:
                 score = accuracy_score(y_test, predicted)
                 ans[name] = ans.get(name, 0) + score
-                print(name, score)
+                print(mall_id, name, score)
             else:
                 for row_id, label in zip(test_data['row_id'], predicted):
                     ans[row_id] = label
@@ -118,7 +119,8 @@ class ModelBase(object):
         train_data = train_data.sort_values(by='time_stamp')
 
         total_cnt = collections.Counter()
-        for mall_id in train_data['mall_id'].unique():
+        for ri, mall_id in enumerate(train_data['mall_id'].unique()):
+            print(ri)
             cur_train_data = train_data[train_data['mall_id'] == mall_id]
             train_label = cur_train_data['shop_id']
             cur_train_data, cur_test_data, _, _ = train_test_split(cur_train_data, train_label, self._test_ratio)
@@ -137,7 +139,8 @@ class ModelBase(object):
         test_data = test_data.sort_values(by='time_stamp')
 
         ans = {}
-        for mall_id in test_data['mall_id'].unique():
+        for ri, mall_id in enumerate(test_data['mall_id'].unique()):
+            print(ri)
             cur_train_data = train_data[train_data['mall_id'] == mall_id]
             cur_test_data = test_data[test_data['mall_id'] == mall_id]
             cur_ans = self._trained_by_mall_and_predict(vec_func, cur_train_data, cur_test_data, mall_id, False)
