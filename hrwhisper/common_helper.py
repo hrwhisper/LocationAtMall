@@ -79,26 +79,20 @@ class ModelBase(object):
         :return:
         """
         ans = {}
-        for mall_id in train_data['mall_id'].unique():
-            vectors = []
-            for func in vec_func:
-                vectors.append(func.train_data_to_vec(train_data, mall_id))
+        for ri, mall_id in enumerate(train_data['mall_id'].unique()):
+            vectors = [func.train_data_to_vec(train_data, mall_id) for func in vec_func]
             X_train = sparse.hstack(vectors)
             y_train = train_data.loc[train_data['mall_id'] == mall_id]['shop_id']
+            # print(X_train.shape, y_train.shape)
 
-            print(X_train.shape, y_train.shape)
-
-            vectors = []
-            for func in vec_func:
-                vectors.append(func.test_data_to_vec(test_data, mall_id))
-
+            vectors = [func.test_data_to_vec(test_data, mall_id) for func in vec_func]
             X_test = sparse.hstack(vectors)
             assert X_test.shape[0] == len(test_data.loc[test_data['mall_id'] == mall_id])
+            # print(X_test.shape)
 
-            print(X_test.shape)
             if has_test_label:
                 y_test = test_data.loc[test_data['mall_id'] == mall_id]['shop_id']
-                print(y_test.shape)
+                # print(y_test.shape)
 
             classifiers = self._get_classifiers()
             for name, cls in classifiers.items():
@@ -106,7 +100,7 @@ class ModelBase(object):
                 if has_test_label:
                     score = accuracy_score(y_test, predicted)
                     ans[name] = ans.get(name, 0) + score
-                    print(mall_id, name, score)
+                    print(ri, mall_id, name, score)
                 else:
                     for row_id, label in zip(test_data.loc[test_data['mall_id'] == mall_id]['row_id'], predicted):
                         ans[row_id] = label
