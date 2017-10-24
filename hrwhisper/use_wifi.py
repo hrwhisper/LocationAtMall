@@ -19,7 +19,7 @@ class WifiToVec(XXToVec):
 
     def train_data_to_vec(self, train_data, mall_id, renew=True, should_save=False):
         """
-        :param data: pandas. train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
+        :param train_data: pandas. train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
         :param mall_id: str
         :param renew: renew the feature
         :param should_save: bool, should save the feature on disk or not.

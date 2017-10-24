@@ -69,42 +69,42 @@ class ModelBase(object):
             'random forest': RandomForestClassifier(n_jobs=3, n_estimators=100, random_state=self._random_state),
         }
 
-    def _trained_by_mall_and_predict_location(self, vec_func, train_data, test_data, has_test_label=True):
+    def _trained_by_mall_and_predict(self, vec_func, train_data, test_data, mall_id, has_test_label=True):
         """
 
         :param vec_func:
         :param train_data:
         :param test_data:
+        :param mall_id:
         :param has_test_label: bool
         :return:
         """
         ans = {}
-        for ri, mall_id in enumerate(train_data['mall_id'].unique()):
-            vectors = [func.train_data_to_vec(train_data, mall_id) for func in vec_func]
-            X_train = sparse.hstack(vectors)
-            y_train = train_data.loc[train_data['mall_id'] == mall_id]['shop_id']
-            # print(X_train.shape, y_train.shape)
+        vectors = [func.train_data_to_vec(train_data, mall_id) for func in vec_func]
+        X_train = sparse.hstack(vectors)
+        y_train = train_data['shop_id']
+        # print(X_train.shape, y_train.shape)
 
-            vectors = [func.test_data_to_vec(test_data, mall_id) for func in vec_func]
-            X_test = sparse.hstack(vectors)
-            assert X_test.shape[0] == len(test_data.loc[test_data['mall_id'] == mall_id])
-            # print(X_test.shape)
+        vectors = [func.test_data_to_vec(test_data, mall_id) for func in vec_func]
+        X_test = sparse.hstack(vectors)
+        assert X_test.shape[0] == test_data.shape[0]
+        # print(X_test.shape)
 
+        if has_test_label:
+            y_test = test_data['shop_id']
+            # print(y_test.shape)
+
+        classifiers = self._get_classifiers()
+        for name, cls in classifiers.items():
+            predicted = trained_and_predict_location(cls, X_train, y_train, X_test)
             if has_test_label:
-                y_test = test_data.loc[test_data['mall_id'] == mall_id]['shop_id']
-                # print(y_test.shape)
-
-            classifiers = self._get_classifiers()
-            for name, cls in classifiers.items():
-                predicted = trained_and_predict_location(cls, X_train, y_train, X_test)
-                if has_test_label:
-                    score = accuracy_score(y_test, predicted)
-                    ans[name] = ans.get(name, 0) + score
-                    print(ri, mall_id, name, score)
-                else:
-                    for row_id, label in zip(test_data.loc[test_data['mall_id'] == mall_id]['row_id'], predicted):
-                        ans[row_id] = label
-                        # joblib.dump(cls, './model_save/use_wifi_{}_{}.pkl'.format(name, mall_id))
+                score = accuracy_score(y_test, predicted)
+                ans[name] = ans.get(name, 0) + score
+                print(name, score)
+            else:
+                for row_id, label in zip(test_data['row_id'], predicted):
+                    ans[row_id] = label
+                    # joblib.dump(cls, './model_save/use_wifi_{}_{}.pkl'.format(name, mall_id))
         return ans
 
     def train_test(self, vec_func):
@@ -116,23 +116,37 @@ class ModelBase(object):
         # ------input data -----------
         train_data = read_train_join_mall()
         train_data = train_data.sort_values(by='time_stamp')
-        train_label = train_data['shop_id']
-        train_data, test_data, _, _ = train_test_split(train_data, train_label, self._test_ratio)
+
+        total_cnt = collections.Counter()
+        for mall_id in train_data['mall_id'].unique():
+            cur_train_data = train_data[train_data['mall_id'] == mall_id]
+            train_label = cur_train_data['shop_id']
+            cur_train_data, cur_test_data, _, _ = train_test_split(cur_train_data, train_label, self._test_ratio)
+            cur_cnt = self._trained_by_mall_and_predict(vec_func, cur_train_data, cur_test_data, mall_id,
+                                                        has_test_label=True)
+            total_cnt.update(cur_cnt)
 
         cnt = train_data['mall_id'].unique().shape[0]
-        total_cnt = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, has_test_label=True)
         for name, score in total_cnt.items():
             print("{} Mean: {}".format(name, score / cnt))
 
     def train_and_on_test_data(self, vec_func):
         train_data = read_train_join_mall()
         test_data = read_test_data()
-        ans = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, False)
+        train_data = train_data.sort_values(by='time_stamp')
+        test_data = test_data.sort_values(by='time_stamp')
+
+        ans = {}
+        for mall_id in test_data['mall_id'].unique():
+            cur_train_data = train_data[train_data['mall_id'] == mall_id]
+            cur_test_data = test_data[test_data['mall_id'] == mall_id]
+            cur_ans = self._trained_by_mall_and_predict(vec_func, cur_train_data, cur_test_data, mall_id, False)
+            ans.update(cur_ans)
 
         _save_path = './result'
         if not os.path.exists(_save_path):
             os.mkdir(_save_path)
-        with open(_save_path + '/hrwhisper_res{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
+        with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
             f.write('row_id,shop_id\n')
             for row_id in test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))
