@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # @Date    : 2017/10/23
 # @Author  : hrwhisper
+from math import sin, cos, atan2, sqrt, pi
+
+import gpxpy.geo
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
@@ -9,13 +12,39 @@ from common_helper import ModelBase, XXToVec
 from use_wifi import WifiToVec
 
 
+def get_distance_by_latitude_and_longitude(lat1, lon1, lat2, lon2):
+    return gpxpy.geo.haversine_distance(lat1, lon1, lat2, lon2)
+
+
+def center_latitudes_and_longitudes(geo_coordinates):
+    """
+
+    :param geo_coordinates: [[latitude,longtitude],...]
+    :return: [latitude,longitudes]
+    """
+    x = y = z = 0
+    for (lat, lng) in geo_coordinates:
+        lat, lng = lat * pi / 180, lng * pi / 180
+        x += cos(lat) * cos(lng)
+        y += cos(lat) * sin(lng)
+        z += sin(lat)
+
+    x = x / len(geo_coordinates)
+    y = y / len(geo_coordinates)
+    z = z / len(geo_coordinates)
+    lng = atan2(y, x)
+    hyp = sqrt(x ** 2 + y ** 2)
+    lat = atan2(z, hyp)
+    return lat * 180 / pi, lng * 180 / pi
+
+
 class LocationToVec(XXToVec):
     def __init__(self):
         super().__init__('./feature_save/location_features_{}_{}.pkl', './feature_save/location_features_{}_{}.pkl')
 
     def train_data_to_vec(self, train_data, mall_id, renew=True, should_save=False):
         """
-        :param data: pandas. train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
+        :param train_data: pandas. train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
         :param mall_id: str
         :param renew: renew the feature
         :param should_save: bool, should save the feature on disk or not.

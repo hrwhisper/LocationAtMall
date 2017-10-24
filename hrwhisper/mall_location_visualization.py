@@ -4,10 +4,9 @@
 """
 画图
 """
-from math import radians, atan, acos, sin, tan, cos
-
 import matplotlib.pyplot as plt
 from parse_data import read_train_join_mall, read_mall_data
+from use_location import center_latitudes_and_longitudes, get_distance_by_latitude_and_longitude
 
 
 def show_plt():
@@ -25,8 +24,7 @@ def only_mall_visualization():
 
     id2color = {mall_id: i for i, mall_id in enumerate(train_data['mall_id'].unique())}
     colors = [id2color[i] for i in train_data['mall_id']]
-    area = 100
-    plt.scatter(x, y, s=area, c=colors, alpha=0.5)
+    plt.scatter(x, y, s=100, c=colors, alpha=0.5)
     show_plt()
 
 
@@ -52,10 +50,16 @@ def shop_mall_visualization(mall_id='m_4572'):
     colors = [id2color[i] for i in train_data['shop_id']]
     plt.scatter(x, y, s=600, c=colors, alpha=0.5)
 
+    center = center_latitudes_and_longitudes(list(zip(x, y)))
+    plt.scatter(center[0], center[1], s=1000, marker='s')
+
     show_plt()
+
 
 
 if __name__ == '__main__':
     # only_mall_visualization()
     shop_mall_visualization()
-
+    # (Lat_A, Lng_A) = (32.060255, 118.796877)
+    # (Lat_B, Lng_B) = (39.904211, 116.407395)
+    # print(gpxpy.geo.haversine_distance(Lat_A, Lng_A, Lat_B, Lng_B))
