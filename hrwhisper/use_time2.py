@@ -11,9 +11,10 @@ from datetime import datetime
 from common_helper import ModelBase, XXToVec
 
 from use_location import LocationToVec
-from use_wifi import WifiToVec
+from use_wifi3 import WifiToVec
 
 """
+use location1 + use wifi + use time2
 RandomForestClassifier(bootstrap=True, class_weight='balanced',
             criterion='gini', max_depth=None, max_features='auto',
             max_leaf_nodes=None, min_impurity_split=1e-07,
@@ -73,7 +74,7 @@ class UseTime(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state,
+            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state,
                                                     class_weight='balanced'),
         }
 
@@ -81,7 +82,7 @@ class UseTime(ModelBase):
 def train_test():
     task = UseTime()
     task.train_test([LocationToVec(), WifiToVec(), TimeToVec()])
-    # task.train_and_on_test_data([TimeToVec()])
+    # task.train_and_on_test_data([LocationToVec(), WifiToVec(), TimeToVec()])
 
 
 if __name__ == '__main__':
