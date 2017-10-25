@@ -134,9 +134,9 @@ class ModelBase(object):
 
     def train_and_on_test_data(self, vec_func):
         train_data = read_train_join_mall()
-        test_data = read_test_data()
+        _test_data = read_test_data()
         train_data = train_data.sort_values(by='time_stamp')
-        test_data = test_data.sort_values(by='time_stamp')
+        test_data = _test_data.sort_values(by='time_stamp')
 
         ans = {}
         for ri, mall_id in enumerate(test_data['mall_id'].unique()):
@@ -151,5 +151,6 @@ class ModelBase(object):
             os.mkdir(_save_path)
         with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
             f.write('row_id,shop_id\n')
-            for row_id in test_data['row_id']:
+            for row_id in _test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))
+        print('done')

@@ -3,53 +3,51 @@
 # @Author  : hrwhisper
 
 import gensim
+import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 
 from common_helper import XXToVec, ModelBase
 from use_location import LocationToVec
-from use_wifi import WifiToVec
+from use_wifi2 import WifiToVec
 
 
 class WifiWordToVec(XXToVec):
     def __init__(self):
         super().__init__('./feature_save/wifi_word2vec_features_{}_{}.pkl',
                          './feature_save/wifi_word2vec_how_to_{}.pkl')
-        self.WORD2VEC_SAVE_PATH = './feature_save/wifi_word2vec_model_{}.pkl'
-        self.word2vec_size = 5
+        self.WORD2VEC_SIZE = 10
+        self.MIN_STRONG = -120
 
     def train_data_to_vec(self, train_data, mall_id, renew=True, should_save=False):
         if renew:
             train_data = train_data.loc[train_data['mall_id'] == mall_id]
-            wifi_bssid = set()
             wifi_rows = []
             for wifi_infos in train_data['wifi_infos']:
                 row = []
                 for wifi in wifi_infos.split(';'):
                     _id, _strong, _connect = wifi.split('|')
                     row.append(_id)  # TODO sort by strong?
-                    wifi_bssid.add(_id)
                 wifi_rows.append(row)
 
-            word2vec = gensim.models.Word2Vec(wifi_rows, window=2, size=self.word2vec_size, min_count=0)
-            wifi_bssid = {_id: i for i, _id in enumerate(sorted(wifi_bssid))}
-            indptr = [0]
-            indices = []
-            data = []
+            word2vec = gensim.models.Word2Vec(wifi_rows, size=self.WORD2VEC_SIZE, min_count=0)
+            print('word2vec done')
+            features = []
             for wifi_infos in train_data['wifi_infos']:
+                cur = np.zeros(self.WORD2VEC_SIZE).astype(float)
+                cnt = 0
                 for wifi in wifi_infos.split(';'):
                     _id, _strong, _connect = wifi.split('|')
-                    data.extend([i for i in word2vec[_id]])
-                    _id = wifi_bssid[_id]
-                    indices.extend([_id * self.word2vec_size + i for i in range(self.word2vec_size)])
-                indptr.append(len(indices))
+                    cur += word2vec[_id] * np.log2(int(_strong) - self.MIN_STRONG)
+                    cnt += np.log2(int(_strong) - self.MIN_STRONG)
+                cur /= cnt
+                features.append(cur)
 
-            wifi_features = csr_matrix((data, indices, indptr))  # TODO normalize
+            wifi_features = csr_matrix(np.array(features))  # TODO normalize
             if should_save:
                 joblib.dump(wifi_features, self.FEATURE_SAVE_PATH.format('train', mall_id))
-            joblib.dump(wifi_bssid, self.HOW_TO_VEC_SAVE_PATH.format('train', mall_id))
-            joblib.dump(word2vec, self.WORD2VEC_SAVE_PATH.format(mall_id))
+            joblib.dump(word2vec, self.HOW_TO_VEC_SAVE_PATH.format(mall_id))
         else:
             wifi_features = joblib.load(self.FEATURE_SAVE_PATH.format('train', mall_id))
         return wifi_features
@@ -57,31 +55,27 @@ class WifiWordToVec(XXToVec):
     def test_data_to_vec(self, test_data, mall_id, renew=True, should_save=False):
         if renew:
             test_data = test_data.loc[test_data['mall_id'] == mall_id]
-            wifi_bssid = joblib.load(self.HOW_TO_VEC_SAVE_PATH.format('train', mall_id))
-            word2vec = joblib.load(self.WORD2VEC_SAVE_PATH.format(mall_id))
-            not_in = set()
-            indptr = [0]
-            indices = []
-            data = []
+            word2vec = joblib.load(self.HOW_TO_VEC_SAVE_PATH.format(mall_id))
+
+            features = []
             for wifi_infos in test_data['wifi_infos']:
+                cur = np.zeros(self.WORD2VEC_SIZE).astype(float)
+                cnt = 0
                 for wifi in wifi_infos.split(';'):
                     _id, _strong, _connect = wifi.split('|')
-                    if _id not in wifi_bssid:
-                        not_in.add(_id)
+                    if _id not in word2vec:
                         continue
-                    data.extend([i for i in word2vec[_id]])
-                    _id = wifi_bssid[_id]
-                    indices.extend([_id * self.word2vec_size + i for i in range(self.word2vec_size)])
-                indptr.append(len(indices))
+                    cur += word2vec[_id] * np.log2(int(_strong) - self.MIN_STRONG)
+                    cnt += np.log2(int(_strong) - self.MIN_STRONG)
+                if cnt:
+                    cur /= cnt
+                features.append(cur)
 
-            print('total: {} ,not_in :{}'.format(len(wifi_bssid), len(not_in)))
-            wifi_features = csr_matrix((data, indices, indptr),
-                                       shape=(len(test_data), len(wifi_bssid) * self.word2vec_size))
-            # TODO normalize
+            wifi_features = csr_matrix(np.array(features))
             if should_save:
                 joblib.dump(wifi_features, self.FEATURE_SAVE_PATH.format('test', mall_id))
         else:
-            wifi_features = joblib.load(self.FEATURE_SAVE_PATH.format('train', mall_id))
+            wifi_features = joblib.load(self.FEATURE_SAVE_PATH.format('test', mall_id))
         return wifi_features
 
 
@@ -91,7 +85,7 @@ class UseWifiWord2vec(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state),
+            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state),
         }
 
 
