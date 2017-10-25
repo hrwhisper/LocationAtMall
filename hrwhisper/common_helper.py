@@ -129,8 +129,9 @@ class ModelBase(object):
             total_cnt.update(cur_cnt)
 
         cnt = train_data['mall_id'].unique().shape[0]
+        classifiers = self._get_classifiers()
         for name, score in total_cnt.items():
-            print("{} Mean: {}".format(name, score / cnt))
+            print("{} Mean: {}".format(classifiers[name], score / cnt))
 
     def train_and_on_test_data(self, vec_func):
         train_data = read_train_join_mall()
