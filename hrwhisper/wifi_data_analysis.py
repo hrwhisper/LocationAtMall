@@ -31,6 +31,7 @@ def many_mall_has_same_bssid():
 def check_mall(train_data, mall_id='m_6803'):
     """
         交易的条数貌似不是很影响结果
+        能收到的wifi条数也不是很影响结果的样子
     """
     train_data = train_data[train_data['mall_id'] == mall_id]
 
@@ -39,7 +40,9 @@ def check_mall(train_data, mall_id='m_6803'):
     wifi_bssid = set()
     _id_cnt = 0
     strong_cnt = collections.Counter()
+    receive_cnt = []
     for wifi_infos in train_data['wifi_infos']:
+        receive_cnt.append(len(wifi_infos.split(';')))
         for wifi in wifi_infos.split(';'):
             _id, _strong, _connect = wifi.split('|')
             wifi_bssid.add(_id)
@@ -51,7 +54,8 @@ def check_mall(train_data, mall_id='m_6803'):
         f.writelines(
             '\n'.join('{},{}'.format(strong, cnt) for strong, cnt in sorted(strong_cnt.items(), key=lambda x: x[0])))
 
-    print('number of bssid: {}, cnt: {}'.format(len(wifi_bssid), _id_cnt))
+    print('number of bssid: {}, cnt: {}, mean receive:{}'.format(len(wifi_bssid), _id_cnt,
+                                                                 sum(receive_cnt) / len(receive_cnt)))
     print()
 
 
