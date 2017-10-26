@@ -10,7 +10,7 @@ from sklearn.externals import joblib
 
 from common_helper import XXToVec, ModelBase
 from use_location import LocationToVec
-from use_wifi2 import WifiToVec
+from use_wifi3 import WifiToVec3
 
 
 class WifiWordToVec(XXToVec):
@@ -29,9 +29,9 @@ class WifiWordToVec(XXToVec):
                 for wifi in wifi_infos.split(';'):
                     _id, _strong, _connect = wifi.split('|')
                     row.append(_id)  # TODO sort by strong?
-                wifi_rows.append(row)
+                wifi_rows.append(sorted(row))
 
-            word2vec = gensim.models.Word2Vec(wifi_rows, size=self.WORD2VEC_SIZE, min_count=0)
+            word2vec = gensim.models.Word2Vec(wifi_rows, sg=1, size=self.WORD2VEC_SIZE, min_count=0)
             print('word2vec done')
             features = []
             for wifi_infos in train_data['wifi_infos']:
@@ -85,13 +85,14 @@ class UseWifiWord2vec(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state),
+            'random forest': RandomForestClassifier(n_jobs=6, n_estimators=200, random_state=self._random_state,
+                                                    class_weight='balanced'),
         }
 
 
 def train_test():
     task = UseWifiWord2vec()
-    task.train_test([LocationToVec(), WifiToVec(), WifiWordToVec()])
+    task.train_test([LocationToVec(), WifiToVec3(), WifiWordToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 
 

@@ -11,16 +11,15 @@ from datetime import datetime
 from common_helper import ModelBase, XXToVec
 
 from use_location import LocationToVec
-from use_wifi3 import WifiToVec
+from use_wifi3 import WifiToVec3
 
 """
-use location1 + use wifi + use time2
-RandomForestClassifier(bootstrap=True, class_weight='balanced',
-            criterion='gini', max_depth=None, max_features='auto',
-            max_leaf_nodes=None, min_impurity_split=1e-07,
-            min_samples_leaf=1, min_samples_split=2,
-            min_weight_fraction_leaf=0.0, n_estimators=200, n_jobs=4,
-            oob_score=False, random_state=42, verbose=0, warm_start=False) Mean: 0.9110178129353056
+LocationToVec(), WifiToVec3(), TimeToVec()
+RandomForestClassifier(class_weight='balanced',n_estimators=400, n_jobs=4,
+              random_state=42) Mean: 0.9083527872548101
+            
+RandomForestClassifier(class_weight='balanced',n_estimators=200, n_jobs=4,
+              random_state=42) Mean: 0.907877531738035
 """
 
 
@@ -31,9 +30,10 @@ class TimeToVec(XXToVec):
     def _extract_feature(self, train_data):
         features = np.array([
             np.array([_time.isoweekday(),
-                      _time.isoweekday() >= 6,  # Mean: 0.9109541149905104
-                      _time.hour // 6,  # 0.9110178129353056
-                      # _time.hour, #  0.9105093297197597
+                      _time.isoweekday() >= 6,  # Mean: 0.9109541149905104 0.9076093830826543
+                      _time.hour // 6,  # 0.9110178129353056 0.907882340
+                      # _time.hour // 5,  # 0.9070676933021364 0.9077367366607973
+                      # _time.hour, #  0.9105093297197597  0.9070204350804165 0.9070565010851597(time//5)
                       ])
             for _time in map(lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M"), train_data['time_stamp'].astype('str'))
         ])
@@ -74,15 +74,15 @@ class UseTime(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state,
+            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state,
                                                     class_weight='balanced'),
         }
 
 
 def train_test():
     task = UseTime()
-    task.train_test([LocationToVec(), WifiToVec(), TimeToVec()])
-    # task.train_and_on_test_data([LocationToVec(), WifiToVec(), TimeToVec()])
+    task.train_test([LocationToVec(), WifiToVec3(), TimeToVec()])
+    # task.train_and_on_test_data([LocationToVec(), WifiToVec3(), TimeToVec()])
 
 
 if __name__ == '__main__':

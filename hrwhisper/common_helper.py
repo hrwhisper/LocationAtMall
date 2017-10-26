@@ -10,6 +10,7 @@ from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
+
 from parse_data import read_test_data, read_train_join_mall
 
 
@@ -54,6 +55,10 @@ class XXToVec(abc.ABC):
 
 
 class ModelBase(object):
+    """
+        划分训练集依据： 总体按时间排序后20%
+    """
+
     def __init__(self, test_ratio=0.2, random_state=42):
         self._test_ratio = test_ratio
         self._random_state = random_state
@@ -66,9 +71,93 @@ class ModelBase(object):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state,
-                                                    class_weight='balanced'),
+            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=100, random_state=self._random_state),
         }
+
+    def _trained_by_mall_and_predict_location(self, vec_func, train_data, test_data, has_test_label=True):
+        """
+
+        :param vec_func:
+        :param train_data:
+        :param test_data:
+        :param has_test_label: bool
+        :return:
+        """
+        ans = {}
+        for ri, mall_id in enumerate(train_data['mall_id'].unique()):
+            vectors = [func.train_data_to_vec(train_data, mall_id) for func in vec_func]
+            X_train = sparse.hstack(vectors)
+            y_train = train_data.loc[train_data['mall_id'] == mall_id]['shop_id']
+            # print(X_train.shape, y_train.shape)
+
+            vectors = [func.test_data_to_vec(test_data, mall_id) for func in vec_func]
+            X_test = sparse.hstack(vectors)
+            assert X_test.shape[0] == len(test_data.loc[test_data['mall_id'] == mall_id])
+            # print(X_test.shape)
+
+            if has_test_label:
+                y_test = test_data.loc[test_data['mall_id'] == mall_id]['shop_id']
+                # print(y_test.shape)
+
+            classifiers = self._get_classifiers()
+            for name, cls in classifiers.items():
+                predicted = trained_and_predict_location(cls, X_train, y_train, X_test)
+                if has_test_label:
+                    score = accuracy_score(y_test, predicted)
+                    ans[name] = ans.get(name, 0) + score
+                    print(ri, mall_id, name, score)
+                else:
+                    print(ri, mall_id)
+                    for row_id, label in zip(test_data.loc[test_data['mall_id'] == mall_id]['row_id'], predicted):
+                        ans[row_id] = label
+                        # joblib.dump(cls, './model_save/use_wifi_{}_{}.pkl'.format(name, mall_id))
+        return ans
+
+    def train_test(self, vec_func):
+        """
+
+        :param vec_func: list of vector function
+        :return:
+        """
+        # ------input data -----------
+        train_data = read_train_join_mall()
+        train_data = train_data.sort_values(by='time_stamp')
+        train_label = train_data['shop_id']
+        train_data, test_data, _, _ = train_test_split(train_data, train_label, self._test_ratio)
+
+        cnt = train_data['mall_id'].unique().shape[0]
+        total_cnt = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, has_test_label=True)
+
+        classifiers = self._get_classifiers()
+        for name, score in total_cnt.items():
+            print("{} Mean: {}".format(classifiers[name], score / cnt))
+
+    def train_and_on_test_data(self, vec_func):
+        train_data = read_train_join_mall()
+        test_data = read_test_data()
+        ans = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, False)
+
+        _save_path = './result'
+        if not os.path.exists(_save_path):
+            os.mkdir(_save_path)
+        with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
+            f.write('row_id,shop_id\n')
+            for row_id in test_data['row_id']:
+                f.write('{},{}\n'.format(row_id, ans[row_id]))
+        print('done')
+
+
+class ModelBase2(ModelBase):
+    """
+        划分训练集依据： 每个商场按时间排序后20%
+        建议用ModelBase，而不是ModelBase2，ModelBase更能模拟线上测试。
+    """
+
+    def __init__(self, test_ratio=0.2, random_state=42):
+        super().__init__(test_ratio, random_state)
+
+    def get_name(self):
+        return self.__class__.__name__
 
     def _trained_by_mall_and_predict(self, vec_func, train_data, test_data, mall_id, has_test_label=True):
         """

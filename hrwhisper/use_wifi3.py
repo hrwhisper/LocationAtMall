@@ -13,7 +13,7 @@ from common_helper import ModelBase, XXToVec
 from use_location import LocationToVec
 
 
-class WifiToVec(XXToVec):
+class WifiToVec3(XXToVec):
     def __init__(self):
         super().__init__('./feature_save/wifi_features_{}_{}.pkl', './feature_save/wifi_bssid_{}_{}.pkl')
         self.min_strong = -300
@@ -118,14 +118,14 @@ class UseWifi(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state,
+            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state,
                                                     class_weight='balanced'),
         }
 
 
 def train_test():
     task = UseWifi()
-    task.train_test([LocationToVec(), WifiToVec()])
+    task.train_test([LocationToVec(), WifiToVec3()])
     # task.train_and_on_test_data([WifiToVec()])
 
 

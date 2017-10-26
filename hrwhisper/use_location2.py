@@ -14,36 +14,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 
 from common_helper import ModelBase, XXToVec
+from use_location import get_distance_by_latitude_and_longitude
 from use_wifi import WifiToVec
 
 
-def get_distance_by_latitude_and_longitude(lat1, lon1, lat2, lon2):
-    return gpxpy.geo.haversine_distance(lat1, lon1, lat2, lon2)
-
-
-def center_latitudes_and_longitudes(geo_coordinates):
-    """
-
-    :param geo_coordinates: [[latitude,longtitude],...]
-    :return: [latitude,longitudes]
-    """
-    x = y = z = 0
-    for (lat, lng) in geo_coordinates:
-        lat, lng = lat * pi / 180, lng * pi / 180
-        x += cos(lat) * cos(lng)
-        y += cos(lat) * sin(lng)
-        z += sin(lat)
-
-    x = x / len(geo_coordinates)
-    y = y / len(geo_coordinates)
-    z = z / len(geo_coordinates)
-    lng = atan2(y, x)
-    hyp = sqrt(x ** 2 + y ** 2)
-    lat = atan2(z, hyp)
-    return lat * 180 / pi, lng * 180 / pi
-
-
-class LocationToVec(XXToVec):
+class LocationToVec2(XXToVec):
     _mall_center_and_area = pd.read_csv('./feature_save/mall_center_and_area.csv')
     MAX_EXCEED_AREA = 0.52
     """
@@ -124,13 +99,14 @@ class UseLoc(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state, class_weight='balanced'),
+            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state,
+                                                    class_weight='balanced'),
         }
 
 
 def train_test():
     task = UseLoc()
-    task.train_test([LocationToVec(), WifiToVec()])
+    task.train_test([LocationToVec2(), WifiToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 
 
