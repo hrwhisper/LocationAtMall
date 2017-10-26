@@ -11,6 +11,7 @@ from datetime import datetime
 from common_helper import ModelBase, XXToVec
 
 from use_location import LocationToVec
+from use_location3 import LocationToVec3
 from use_wifi3 import WifiToVec3
 
 """
@@ -81,7 +82,7 @@ class UseTime(ModelBase):
 
 def train_test():
     task = UseTime()
-    task.train_test([LocationToVec(), WifiToVec3(), TimeToVec()])
+    task.train_test([LocationToVec3(), WifiToVec3(), TimeToVec()])
     # task.train_and_on_test_data([LocationToVec(), WifiToVec3(), TimeToVec()])
 
 
