@@ -10,6 +10,7 @@ from sklearn.externals import joblib
 
 from common_helper import XXToVec, ModelBase
 from use_location import LocationToVec
+from use_time import TimeToVec
 from use_wifi3 import WifiToVec3
 
 
@@ -85,14 +86,14 @@ class UseWifiWord2vec(ModelBase):
 
     def _get_classifiers(self):
         return {
-            'random forest': RandomForestClassifier(n_jobs=6, n_estimators=200, random_state=self._random_state,
+            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state,
                                                     class_weight='balanced'),
         }
 
 
 def train_test():
     task = UseWifiWord2vec()
-    task.train_test([LocationToVec(), WifiToVec3(), WifiWordToVec()])
+    task.train_test([LocationToVec(), WifiToVec3(), WifiWordToVec(), TimeToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 
 

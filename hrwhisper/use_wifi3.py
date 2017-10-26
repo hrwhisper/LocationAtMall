@@ -13,14 +13,14 @@ from datetime import datetime
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
-from common_helper import ModelBase, XXToVec, ModelBase2
+from common_helper import ModelBase, XXToVec
 from use_location import LocationToVec
 
 
 class WifiToVec3(XXToVec):
     def __init__(self):
         super().__init__('./feature_save/wifi_features_{}_{}.pkl', './feature_save/wifi_bssid_{}_{}.pkl')
-        self.min_strong = -300
+        self.min_strong = -120
 
     def train_data_to_vec(self, train_data, mall_id, renew=True, should_save=False):
         """
@@ -116,7 +116,7 @@ class WifiToVec3(XXToVec):
                     data.append(_strong)
                 indptr.append(len(indices))
 
-            print('total: {} ,not_in :{}'.format(len(wifi_bssid), len(not_in)))
+            # print('total: {} ,not_in :{}'.format(len(wifi_bssid), len(not_in)))
             wifi_features = csr_matrix((data, indices, indptr), shape=(len(test_data), len(wifi_bssid)), dtype=int)
             # TODO normalize
             if should_save:
@@ -139,7 +139,7 @@ class UseWifi(ModelBase):
 
 def train_test():
     task = UseWifi()
-    task.train_test([LocationToVec(), WifiToVec()])
+    task.train_test([LocationToVec(), WifiToVec3()])
     # task.train_and_on_test_data([WifiToVec()])
 
 

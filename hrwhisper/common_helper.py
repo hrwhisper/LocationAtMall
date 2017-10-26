@@ -140,7 +140,7 @@ class ModelBase(object):
         _save_path = './result'
         if not os.path.exists(_save_path):
             os.mkdir(_save_path)
-        with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
+        with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y-%m-%d-%H-%M-%S")), 'w') as f:
             f.write('row_id,shop_id\n')
             for row_id in test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))
@@ -239,7 +239,7 @@ class ModelBase2(ModelBase):
         _save_path = './result'
         if not os.path.exists(_save_path):
             os.mkdir(_save_path)
-        with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y%m%d-%H%M%S")), 'w') as f:
+        with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y-%m-%d-%H-%M-%S")), 'w') as f:
             f.write('row_id,shop_id\n')
             for row_id in _test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))
