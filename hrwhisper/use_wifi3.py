@@ -4,12 +4,16 @@
 """
     使用了wifi特征，类似BOW (本地：0.8942214814065961    提交：0.8951)
     update: 同一个用户可能检测多个相同的bssid，将这些bssid编号
+    update2: 去除mobile hotspot，若某wifi只有某天出现，则判定为mobile hotspot.
 """
+
+import collections
+from datetime import datetime
 
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
-from common_helper import ModelBase, XXToVec
+from common_helper import ModelBase, XXToVec, ModelBase2
 from use_location import LocationToVec
 
 
@@ -28,14 +32,23 @@ class WifiToVec3(XXToVec):
         """
         if renew:
             train_data = train_data.loc[train_data['mall_id'] == mall_id]
-            wifi_bssid = set()
+            wifi_and_date = collections.defaultdict(set)
             wifi_rows = []
             # 去除同一条记录中多个bssid
+            for wifi_infos, _time in zip(train_data['wifi_infos'], train_data['time_stamp']):
+                _time = datetime.strptime(_time, "%Y-%m-%d %H:%M")
+                for wifi in wifi_infos.split(';'):
+                    _id, _strong, _connect = wifi.split('|')
+                    wifi_and_date[_id].add(str(_time.date()))
+
+            wifi_bssid = set()
             for wifi_infos in train_data['wifi_infos']:
                 row = {}
                 cur_wifi_len = len(wifi_infos.split(';'))
                 for wifi in wifi_infos.split(';'):
                     _id, _strong, _connect = wifi.split('|')
+                    if len(wifi_and_date[_id]) < 2:
+                        continue
                     _strong = int(_strong) - self.min_strong
                     if _id not in row:
                         row[_id] = [_strong, _connect == 'true']
@@ -48,6 +61,7 @@ class WifiToVec3(XXToVec):
                                 wifi_bssid.add(_t_id)
                                 break
                 wifi_rows.append(row)
+
             wifi_bssid = {_id: i for i, _id in enumerate(sorted(wifi_bssid))}
             indptr = [0]
             indices = []
@@ -103,7 +117,7 @@ class WifiToVec3(XXToVec):
                 indptr.append(len(indices))
 
             print('total: {} ,not_in :{}'.format(len(wifi_bssid), len(not_in)))
-            wifi_features = csr_matrix((data, indices, indptr), dtype=int, shape=(len(test_data), len(wifi_bssid)))
+            wifi_features = csr_matrix((data, indices, indptr), shape=(len(test_data), len(wifi_bssid)), dtype=int)
             # TODO normalize
             if should_save:
                 joblib.dump(wifi_features, self.FEATURE_SAVE_PATH.format('test', mall_id))
@@ -125,7 +139,7 @@ class UseWifi(ModelBase):
 
 def train_test():
     task = UseWifi()
-    task.train_test([LocationToVec(), WifiToVec3()])
+    task.train_test([LocationToVec(), WifiToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 
 

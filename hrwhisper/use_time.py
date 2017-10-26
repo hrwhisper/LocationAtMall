@@ -16,10 +16,10 @@ from use_wifi3 import WifiToVec3
 """
 LocationToVec(), WifiToVec3(), TimeToVec()
 RandomForestClassifier(class_weight='balanced',n_estimators=400, n_jobs=4,
-              random_state=42) Mean: 0.9083527872548101
+              random_state=42) Mean: 0.909196793335719
             
 RandomForestClassifier(class_weight='balanced',n_estimators=200, n_jobs=4,
-              random_state=42) Mean: 0.907877531738035
+              random_state=42) Mean: 0.9086988576400435
 """
 
 

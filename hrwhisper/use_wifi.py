@@ -53,7 +53,7 @@ class WifiToVec(XXToVec):
                     data.append(_strong)
                 indptr.append(len(indices))
 
-            wifi_features = csr_matrix((data, indices, indptr), dtype=int)  # TODO normalize
+            wifi_features = csr_matrix((data, indices, indptr))  # TODO normalize
             if should_save:
                 joblib.dump(wifi_features, self.FEATURE_SAVE_PATH.format('train', mall_id))
             joblib.dump(wifi_bssid, self.HOW_TO_VEC_SAVE_PATH.format('train', mall_id))
@@ -92,7 +92,7 @@ class WifiToVec(XXToVec):
                 indptr.append(len(indices))
 
             print('total: {} ,not_in :{}'.format(len(wifi_bssid), len(not_in)))
-            wifi_features = csr_matrix((data, indices, indptr), dtype=int, shape=(len(test_data), len(wifi_bssid)))
+            wifi_features = csr_matrix((data, indices, indptr), shape=(len(test_data), len(wifi_bssid)))
             # TODO normalize
             if should_save:
                 joblib.dump(wifi_features, self.FEATURE_SAVE_PATH.format('test', mall_id))
