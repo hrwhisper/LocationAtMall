@@ -11,6 +11,7 @@ from datetime import datetime
 from sklearn.externals import joblib
 
 from parse_data import read_train_join_mall
+from visulization_wifi import draw_wifi
 
 
 def many_mall_has_same_bssid():
@@ -93,7 +94,7 @@ def check_low():
         check_mall(train_data, mall_id)
 
 
-def _wifi_co_occurrence(train_data, mall_id='m_6803'):
+def _wifi_co_occurrence(train_data, mall_id='m_7168'):
     train_data = train_data.loc[train_data['mall_id'] == mall_id]
     wifi_and_date = collections.defaultdict(set)
     for wifi_infos, _time in zip(train_data['wifi_infos'], train_data['time_stamp']):
@@ -118,9 +119,13 @@ def _wifi_co_occurrence(train_data, mall_id='m_6803'):
                 wifi_association[wifi_ids[i]].add(wifi_ids[j])
                 wifi_association[wifi_ids[j]].add(wifi_ids[i])
 
+    draw_wifi(wifi_association, mall_id)
     res = []
+    total = len(wifi_association)
+    print(total)
     for _id, l in wifi_association.items():
-        if len(l) > 100:
+        # print(_id, len(l))
+        if len(l) > total // 4:
             res.append([mall_id, _id])
     return res
 
@@ -139,4 +144,5 @@ def wifi_co_occurrence_analysis():
 if __name__ == '__main__':
     # many_mall_has_same_bssid()
     # check_low()
-    print(wifi_co_occurrence_analysis())
+    # wifi_co_occurrence_analysis()
+    _wifi_co_occurrence(read_train_join_mall())
