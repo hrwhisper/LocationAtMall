@@ -17,6 +17,7 @@ from sklearn.externals import joblib
 
 from common_helper import ModelBase, XXToVec
 from use_wifi import WifiToVec
+
 """
 LocationToVec3(), WifiToVec3(), TimeToVec()
 RandomForestClassifier(bootstrap=True, class_weight='balanced',
@@ -27,6 +28,7 @@ RandomForestClassifier(bootstrap=True, class_weight='balanced',
             n_estimators=400, n_jobs=-1, oob_score=False, random_state=42,
             verbose=0, warm_start=False) Mean: 0.9093965396494474
 """
+
 
 def get_distance_by_latitude_and_longitude(lat1, lon1, lat2, lon2):
     return gpxpy.geo.haversine_distance(lat1, lon1, lat2, lon2)
@@ -59,6 +61,17 @@ class LocationToVec3(XXToVec):
         super().__init__('./feature_save/location_features_{}_{}.pkl', './feature_save/location_features_{}_{}.pkl')
         self.scale = 10
 
+    def _location_to_vec(self, train_data):
+        indptr = [0]
+        indices = []
+        data = []
+        for log, lat in zip(train_data['longitude'], train_data['latitude']):
+            indices.extend([0, 1])
+            data.extend([log * self.scale, lat * self.scale])
+            indptr.append(len(indices))
+
+        return csr_matrix((data, indices, indptr))
+
     def train_data_to_vec(self, train_data, mall_id, renew=True, should_save=False):
         """
         :param train_data: pandas. train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
@@ -69,15 +82,7 @@ class LocationToVec3(XXToVec):
         """
         if renew:
             train_data = train_data.loc[train_data['mall_id'] == mall_id]
-            indptr = [0]
-            indices = []
-            data = []
-            for log, lat in zip(train_data['longitude'], train_data['latitude']):
-                indices.extend([0, 1])
-                data.extend([log * self.scale, lat * self.scale])
-                indptr.append(len(indices))
-
-            features = csr_matrix((data, indices, indptr))
+            features = self._location_to_vec(train_data)
             if should_save:
                 joblib.dump(features, self.FEATURE_SAVE_PATH.format('train', mall_id))
         else:
@@ -87,15 +92,7 @@ class LocationToVec3(XXToVec):
     def test_data_to_vec(self, test_data, mall_id, renew=True, should_save=False):
         if renew:
             test_data = test_data.loc[test_data['mall_id'] == mall_id]
-            indptr = [0]
-            indices = []
-            data = []
-            for log, lat in zip(test_data['longitude'], test_data['latitude']):
-                indices.extend([0, 1])
-                data.extend([log * self.scale, lat * self.scale])
-                indptr.append(len(indices))
-
-            features = csr_matrix((data, indices, indptr))
+            features = self._location_to_vec(test_data)
             if should_save:
                 joblib.dump(features, self.FEATURE_SAVE_PATH.format('test', mall_id))
         else:

@@ -9,7 +9,7 @@ from pprint import pprint
 from parse_data import read_mall_data, read_train_join_mall
 
 
-def mall_category_time(mall_id='m_7168', _date='2017-08-01'):
+def mall_category_time(mall_id='m_7168', _date='2017-08-04'):
     """
     计算某商场某天类别随时间变化
     """
@@ -26,7 +26,6 @@ def mall_category_time(mall_id='m_7168', _date='2017-08-01'):
 
     with open('./analysis_data/mall_counter_{}.csv'.format(_date), 'w') as f:
         f.write(',{}\n'.format(','.join([str(i) for i in range(24)])))
-        f.write('\n')
         for category_id, cnt in sorted(counter.items()):
             f.write('{},{}\n'.format(category_id, ','.join([str(c) for c in cnt])))
 

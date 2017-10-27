@@ -6,7 +6,10 @@
 """
 import collections
 import time
+from datetime import datetime
+
 from sklearn.externals import joblib
+
 from parse_data import read_train_join_mall
 
 
@@ -90,6 +93,50 @@ def check_low():
         check_mall(train_data, mall_id)
 
 
+def _wifi_co_occurrence(train_data, mall_id='m_6803'):
+    train_data = train_data.loc[train_data['mall_id'] == mall_id]
+    wifi_and_date = collections.defaultdict(set)
+    for wifi_infos, _time in zip(train_data['wifi_infos'], train_data['time_stamp']):
+        _time = datetime.strptime(_time, "%Y-%m-%d %H:%M")
+        for wifi in wifi_infos.split(';'):
+            _id, _strong, _connect = wifi.split('|')
+            wifi_and_date[_id].add(str(_time.date()))
+
+    wifi_association = collections.defaultdict(set)
+    for wifi_infos in train_data['wifi_infos'].values:
+        wifi_ids = set()
+        for wifi in wifi_infos.split(';'):
+            _id, _strong, _connect = wifi.split('|')
+            if len(wifi_and_date[_id]) < 5:
+                continue
+            wifi_ids.add(_id)
+
+        wifi_ids = list(wifi_ids)
+
+        for i in range(len(wifi_ids)):
+            for j in range(i + 1, len(wifi_ids)):
+                wifi_association[wifi_ids[i]].add(wifi_ids[j])
+                wifi_association[wifi_ids[j]].add(wifi_ids[i])
+
+    res = []
+    for _id, l in wifi_association.items():
+        if len(l) > 100:
+            res.append([mall_id, _id])
+    return res
+
+
+def wifi_co_occurrence_analysis():
+    train_data = read_train_join_mall()
+    res = []
+    for mall_id in train_data['mall_id'].unique():
+        res.extend(_wifi_co_occurrence(train_data, mall_id))
+    with open('./feature_save/wifi_co_occurrence.csv', 'w') as f:
+        f.write('mall_id,bssid\n')
+        for mall_id, bssid in res:
+            f.write('{},{}\n'.format(mall_id, bssid))
+
+
 if __name__ == '__main__':
     # many_mall_has_same_bssid()
-    check_low()
+    # check_low()
+    print(wifi_co_occurrence_analysis())

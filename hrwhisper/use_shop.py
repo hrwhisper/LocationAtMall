@@ -7,6 +7,7 @@
 import collections
 from datetime import datetime
 
+import copy
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
@@ -22,15 +23,19 @@ class ShopToVec(XXToVec):
         super().__init__('./feature_save/shop_features_{}_{}.pkl', './feature_save/shop_features_how_to_{}.pkl')
         self.slot = 1
 
+    def _counter_index(self, weekday):
+        return 1 if weekday >= 6 else 0
+
     def _shop_to_vec(self, train_data, counter):
-        category_id = {i: _id for i, _id in enumerate(sorted(counter.keys()))}
+        category_id = {i: _id for i, _id in enumerate(sorted(set(counter[0].keys()) | set(counter[1].keys())))}
         indptr = [0]
         indices = []
         data = []
         for _datetime in map(lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M"), train_data['time_stamp']):
             indices.extend([i for i in range(len(category_id))])
             for i in range(len(category_id)):
-                data.append(counter[category_id[i]].get(_datetime.hour // self.slot, 0))
+                data.append(counter[self._counter_index(_datetime.isoweekday())][category_id[i]].get(
+                    _datetime.hour // self.slot, 0))
             indptr.append(len(indices))
         features = csr_matrix((data, indices, indptr))
         return features
@@ -45,22 +50,25 @@ class ShopToVec(XXToVec):
         """
         if renew:
             train_data = train_data.loc[train_data['mall_id'] == mall_id]
-            # TODO 周末分开
 
-            counter = collections.defaultdict(dict)
+            counter = [collections.defaultdict(dict), collections.defaultdict(dict)]
             for _datetime, category_id in zip(train_data['time_stamp'], train_data['category_id']):
                 _datetime = datetime.strptime(_datetime, "%Y-%m-%d %H:%M")
                 _date = str(_datetime.date())
                 h = _datetime.hour // self.slot
-                if h not in counter[category_id]:
-                    counter[category_id][h] = collections.Counter()
-                counter[category_id][h][_date] += 1
+                _cid = self._counter_index(_datetime.isoweekday())  # 周末、平时分开
+                if h not in counter[_cid][category_id]:
+                    counter[_cid][category_id][h] = collections.Counter()
+                counter[_cid][category_id][h][_date] += 1
 
-            for category_id in counter.keys():
-                for h in range(24 // self.slot):
-                    if h not in counter[category_id]: continue
-                    counter[category_id][h] = sum(counter[category_id][h].values()) # / len(counter[category_id][h])
-
+            t = copy.deepcopy(counter)
+            for i in range(2):
+                for category_id in counter[i].keys():
+                    for h in range(24 // self.slot):
+                        if h not in counter[i][category_id]: continue
+                        counter[i][category_id][h] = sum(counter[i][category_id][h].values()) \
+                               / sum(sum(t[i][c_id][h].values()) if h in t[i][c_id] else 0 for c_id in t[i].keys())
+                        # 除以所有类别该时间下的总需求
             features = self._shop_to_vec(train_data, counter)
 
             if should_save:
