@@ -71,72 +71,78 @@ class ModelBase(object):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=100, random_state=self._random_state),
+            'random forest': RandomForestClassifier(n_jobs=os.cpu_count() // 2, n_estimators=200,
+                                                    random_state=self._random_state, class_weight='balanced'),
         }
 
-    def _trained_by_mall_and_predict_location(self, vec_func, train_data, test_data, has_test_label=True):
+    def _data_to_vec(self, mall_id, vec_func, data, label=None, is_train=True):
+        vectors = [func.train_data_to_vec(data, mall_id) if is_train else func.test_data_to_vec(data, mall_id)
+                   for func in vec_func]
+        X = sparse.hstack(vectors)
+        y = label[data['mall_id'] == mall_id] if label is not None else None
+        return X, y
+
+    def _train_and_test_to_vec(self, mall_id, vec_func, train_data, train_label, test_data, test_label=None):
+        X_train, y_train = self._data_to_vec(mall_id, vec_func, train_data, train_label)
+        X_test, y_test = self._data_to_vec(mall_id, vec_func, test_data, test_label, is_train=False)
+        return X_train, y_train, X_test, y_test
+
+    def _trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data, test_label=None):
         """
 
         :param vec_func:
         :param train_data:
+        :param train_label
         :param test_data:
-        :param has_test_label: bool
+        :param test_label:
         :return:
         """
         ans = {}
+        cls_report = {}
         for ri, mall_id in enumerate(train_data['mall_id'].unique()):
-            vectors = [func.train_data_to_vec(train_data, mall_id) for func in vec_func]
-            X_train = sparse.hstack(vectors)
-            y_train = train_data.loc[train_data['mall_id'] == mall_id]['shop_id']
-            # print(X_train.shape, y_train.shape)
-
-            vectors = [func.test_data_to_vec(test_data, mall_id) for func in vec_func]
-            X_test = sparse.hstack(vectors)
-            assert X_test.shape[0] == len(test_data.loc[test_data['mall_id'] == mall_id])
-            # print(X_test.shape)
-
-            if has_test_label:
-                y_test = test_data.loc[test_data['mall_id'] == mall_id]['shop_id']
-                # print(y_test.shape)
-
+            X_train, y_train, X_test, y_test = self._train_and_test_to_vec(mall_id, vec_func, train_data,
+                                                                           train_label, test_data, test_label)
             classifiers = self._get_classifiers()
             for name, cls in classifiers.items():
                 predicted = trained_and_predict_location(cls, X_train, y_train, X_test)
-                if has_test_label:
+                for row_id, label in zip(test_data[test_data['mall_id'] == mall_id]['row_id'], predicted):
+                    ans[row_id] = label
+
+                if test_label is not None:
                     score = accuracy_score(y_test, predicted)
-                    ans[name] = ans.get(name, 0) + score
+                    cls_report[name] = cls_report.get(name, 0) + score
                     print(ri, mall_id, name, score)
                 else:
                     print(ri, mall_id)
-                    for row_id, label in zip(test_data.loc[test_data['mall_id'] == mall_id]['row_id'], predicted):
-                        ans[row_id] = label
-                        # joblib.dump(cls, './model_save/use_wifi_{}_{}.pkl'.format(name, mall_id))
+
+        if test_label is not None:
+            cnt = train_data['mall_id'].unique().shape[0]
+            classifiers = self._get_classifiers()
+            for name, score in cls_report.items():
+                print("{} Mean: {}".format(classifiers[name], score / cnt))
         return ans
 
-    def train_test(self, vec_func):
+    def train_test(self, vec_func, target_column='shop_id'):
         """
 
         :param vec_func: list of vector function
+        :param target_column: the target column you want to predict.
         :return:
         """
         # ------input data -----------
         train_data = read_train_join_mall()
         train_data = train_data.sort_values(by='time_stamp')
-        train_label = train_data['shop_id']
-        train_data, test_data, _, _ = train_test_split(train_data, train_label, self._test_ratio)
+        train_label = train_data[target_column]
+        train_data, test_data, train_label, test_label = train_test_split(train_data, train_label, self._test_ratio)
 
-        cnt = train_data['mall_id'].unique().shape[0]
-        total_cnt = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, has_test_label=True)
+        ans = self._trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data, test_label)
 
-        classifiers = self._get_classifiers()
-        for name, score in total_cnt.items():
-            print("{} Mean: {}".format(classifiers[name], score / cnt))
-
-    def train_and_on_test_data(self, vec_func):
+    def train_and_on_test_data(self, vec_func, target_column='shop_id'):
         train_data = read_train_join_mall()
+        train_label = train_data[target_column]
         test_data = read_test_data()
-        ans = self._trained_by_mall_and_predict_location(vec_func, train_data, test_data, False)
 
+        ans = self._trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data)
         _save_path = './result'
         if not os.path.exists(_save_path):
             os.mkdir(_save_path)
