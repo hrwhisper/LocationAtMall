@@ -60,13 +60,9 @@ class WifiWordToVec(XXToVec):
         return csr_matrix(np.array(features))
 
 
-class UseWifiWord2vec(ModelBase):
-    def __init__(self):
-        super().__init__()
-
 
 def train_test():
-    task = UseWifiWord2vec()
+    task = ModelBase()
     task.train_test([WifiWordToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 

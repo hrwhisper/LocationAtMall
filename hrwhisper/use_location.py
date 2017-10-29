@@ -12,7 +12,6 @@ from math import sin, cos, atan2, sqrt, pi
 
 import gpxpy.geo
 from scipy.sparse import csr_matrix
-from sklearn.ensemble import RandomForestClassifier
 
 from common_helper import ModelBase, XXToVec
 
@@ -76,19 +75,8 @@ class LocationToVec(XXToVec):
         return self._do_transform(test_data)
 
 
-class UseLoc(ModelBase):
-    def __init__(self):
-        super().__init__()
-
-    def _get_classifiers(self):
-        return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state,
-                                                    class_weight='balanced'),
-        }
-
-
 def train_test():
-    task = UseLoc()
+    task = ModelBase()
     task.train_test([LocationToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 

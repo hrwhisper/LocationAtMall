@@ -42,13 +42,8 @@ class TimeToVec(XXToVec):
         return self._do_transform(data)
 
 
-class UseTime(ModelBase):
-    def __init__(self):
-        super().__init__()
-
-
 def train_test():
-    task = UseTime()
+    task = ModelBase()
     task.train_test([TimeToVec()])
     # task.train_and_on_test_data([LocationToVec(), WifiToVec(), TimeToVec()])
 

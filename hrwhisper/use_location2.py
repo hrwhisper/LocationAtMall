@@ -8,11 +8,10 @@
 
 import pandas as pd
 from scipy.sparse import csr_matrix
-from sklearn.ensemble import RandomForestClassifier
 
 from common_helper import ModelBase, XXToVec
 from use_location import get_distance_by_latitude_and_longitude
-from use_wifi import WifiToVec
+
 
 
 class LocationToVec2(XXToVec):
@@ -71,21 +70,10 @@ class LocationToVec2(XXToVec):
         return csr_matrix((data, indices, indptr))
 
 
-class UseLoc(ModelBase):
-    def __init__(self):
-        super().__init__()
-
-    def _get_classifiers(self):
-        return {
-            'random forest': RandomForestClassifier(n_jobs=3, n_estimators=200, random_state=self._random_state,
-                                                    class_weight='balanced'),
-        }
-
-
 def train_test():
-    task = UseLoc()
-    task.train_test([LocationToVec2(), WifiToVec()])
-    # task.train_and_on_test_data([WifiToVec()])
+    task = ModelBase()
+    task.train_test([LocationToVec2()])
+    # task.train_and_on_test_data([LocationToVec2()])
 
 
 if __name__ == '__main__':

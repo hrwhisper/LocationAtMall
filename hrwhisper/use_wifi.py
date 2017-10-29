@@ -11,7 +11,6 @@ import collections
 from datetime import datetime
 
 from scipy.sparse import csr_matrix
-from sklearn.ensemble import RandomForestClassifier
 
 from common_helper import ModelBase, XXToVec
 
@@ -108,19 +107,8 @@ class WifiToVec(XXToVec):
         return wifi_features
 
 
-class UseWifi(ModelBase):
-    def __init__(self):
-        super().__init__()
-
-    def _get_classifiers(self):
-        return {
-            'random forest': RandomForestClassifier(n_jobs=4, n_estimators=200, random_state=self._random_state,
-                                                    class_weight='balanced'),
-        }
-
-
 def train_test():
-    task = UseWifi()
+    task = ModelBase()
     task.train_test([WifiToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 

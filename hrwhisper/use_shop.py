@@ -66,13 +66,8 @@ class ShopToVec(XXToVec):
         return features
 
 
-class UseShop(ModelBase):
-    def __init__(self):
-        super().__init__()
-
-
 def train_test():
-    task = UseShop()
+    task = ModelBase()
     task.train_test([ShopToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 
