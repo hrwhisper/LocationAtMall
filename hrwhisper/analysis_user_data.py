@@ -2,9 +2,7 @@
 # @Date    : 2017/10/26
 # @Author  : hrwhisper
 from datetime import datetime
-
 import collections
-from pprint import pprint
 
 from parse_data import read_mall_data, read_train_join_mall
 

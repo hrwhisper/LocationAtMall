@@ -5,13 +5,10 @@
     经纬度 超过中心点多少的去掉。
     好像没啥用？
 """
-from math import sin, cos, atan2, sqrt, pi
 
 import pandas as pd
-import gpxpy.geo
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.externals import joblib
 
 from common_helper import ModelBase, XXToVec
 from use_location import get_distance_by_latitude_and_longitude
@@ -26,71 +23,52 @@ class LocationToVec2(XXToVec):
     """
 
     def __init__(self):
-        super().__init__('./feature_save/location_features_{}_{}.pkl', './feature_save/location_features_{}_{}.pkl')
+        super().__init__('./feature_save/location_features_{}_{}.pkl')
 
-    def train_data_to_vec(self, train_data, mall_id, renew=True, should_save=False):
-        """
-        :param train_data: pandas. train_data.join(mall_data.set_index('shop_id'), on='shop_id', rsuffix='_mall')
-        :param mall_id: str
-        :param renew: renew the feature
-        :param should_save: bool, should save the feature on disk or not.
-        :return: csr_matrix
-        """
-        if renew:
-            train_data = train_data.loc[train_data['mall_id'] == mall_id]
-            indptr = [0]
-            indices = []
-            data = []
+    def _fit_transform(self, train_data, mall_id):
+        train_data = train_data.loc[train_data['mall_id'] == mall_id]
+        indptr = [0]
+        indices = []
+        data = []
 
-            t = self._mall_center_and_area[self._mall_center_and_area['mall_id'] == mall_id]
-            center_lat, center_log = t['center_latitude'].iat[0], t['center_longitude'].iat[0]
-            max_area = t['max_area'].iat[0]
+        t = self._mall_center_and_area[self._mall_center_and_area['mall_id'] == mall_id]
+        center_lat, center_log = t['center_latitude'].iat[0], t['center_longitude'].iat[0]
+        max_area = t['max_area'].iat[0]
 
-            for log, lat in zip(train_data['longitude'], train_data['latitude']):
-                indices.extend([0, 1])
+        for log, lat in zip(train_data['longitude'], train_data['latitude']):
+            indices.extend([0, 1])
 
-                dis_to_center = get_distance_by_latitude_and_longitude(lat, log, center_lat, center_log)
-                if max_area * self.MAX_EXCEED_AREA < dis_to_center:
-                    data.extend([center_lat, center_log])
-                else:
-                    data.extend([lat, log])
+            dis_to_center = get_distance_by_latitude_and_longitude(lat, log, center_lat, center_log)
+            if max_area * self.MAX_EXCEED_AREA < dis_to_center:
+                data.extend([center_lat, center_log])
+            else:
+                data.extend([lat, log])
 
-                indptr.append(len(indices))
+            indptr.append(len(indices))
 
-            features = csr_matrix((data, indices, indptr))
-            if should_save:
-                joblib.dump(features, self.FEATURE_SAVE_PATH.format('train', mall_id))
-        else:
-            features = joblib.load(self.FEATURE_SAVE_PATH.format('train', mall_id))
-        return features
+        return csr_matrix((data, indices, indptr))
 
-    def test_data_to_vec(self, test_data, mall_id, renew=True, should_save=False):
-        if renew:
-            test_data = test_data.loc[test_data['mall_id'] == mall_id]
-            indptr = [0]
-            indices = []
-            data = []
+    def _transform(self, test_data, mall_id):
+        test_data = test_data.loc[test_data['mall_id'] == mall_id]
+        indptr = [0]
+        indices = []
+        data = []
 
-            t = self._mall_center_and_area[self._mall_center_and_area['mall_id'] == mall_id]
-            center_lat, center_log = t['center_latitude'].iat[0], t['center_longitude'].iat[0]
-            max_area = t['max_area'].iat[0]
+        t = self._mall_center_and_area[self._mall_center_and_area['mall_id'] == mall_id]
+        center_lat, center_log = t['center_latitude'].iat[0], t['center_longitude'].iat[0]
+        max_area = t['max_area'].iat[0]
 
-            for log, lat in zip(test_data['longitude'], test_data['latitude']):
-                indices.extend([0, 1])
+        for log, lat in zip(test_data['longitude'], test_data['latitude']):
+            indices.extend([0, 1])
 
-                dis_to_center = get_distance_by_latitude_and_longitude(lat, log, center_lat, center_log)
-                if max_area * self.MAX_EXCEED_AREA < dis_to_center:
-                    data.extend([center_lat, center_log])
-                else:
-                    data.extend([lat, log])
-                indptr.append(len(indices))
+            dis_to_center = get_distance_by_latitude_and_longitude(lat, log, center_lat, center_log)
+            if max_area * self.MAX_EXCEED_AREA < dis_to_center:
+                data.extend([center_lat, center_log])
+            else:
+                data.extend([lat, log])
+            indptr.append(len(indices))
 
-            features = csr_matrix((data, indices, indptr))
-            if should_save:
-                joblib.dump(features, self.FEATURE_SAVE_PATH.format('test', mall_id))
-        else:
-            features = joblib.load(self.FEATURE_SAVE_PATH.format('test', mall_id))
-        return features
+        return csr_matrix((data, indices, indptr))
 
 
 class UseLoc(ModelBase):

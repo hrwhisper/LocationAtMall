@@ -14,7 +14,6 @@ from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 
 from common_helper import ModelBase, XXToVec
-from use_location import LocationToVec
 
 
 class WifiToVec(XXToVec):
@@ -122,7 +121,7 @@ class UseWifi(ModelBase):
 
 def train_test():
     task = UseWifi()
-    task.train_test([LocationToVec(), WifiToVec3()])
+    task.train_test([WifiToVec()])
     # task.train_and_on_test_data([WifiToVec()])
 
 

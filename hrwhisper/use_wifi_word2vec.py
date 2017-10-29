@@ -5,7 +5,6 @@
 import gensim
 import numpy as np
 from scipy.sparse import csr_matrix
-from sklearn.externals import joblib
 
 from common_helper import XXToVec, ModelBase
 

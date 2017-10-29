@@ -3,7 +3,6 @@
 # @Author  : hrwhisper
 import os
 
-from scipy import sparse
 import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -13,7 +12,6 @@ from sklearn.externals import joblib
 from common_helper import ModelBase, XXToVec
 from parse_data import read_mall_data
 
-from use_time import TimeToVec
 
 
 class CategoryToVec(XXToVec):
@@ -73,8 +71,8 @@ class UseCategory(ModelBase):
 
 def train_test():
     task = UseCategory()
-    task.train_test([LocationToVec3(), WifiToVec3(), TimeToVec(), CategoryToVec()], 'shop_id')
-    # task.train_and_on_test_data([LocationToVec(), WifiToVec3(), TimeToVec()])
+    task.train_test([CategoryToVec()], 'shop_id')
+    # task.train_and_on_test_data([CategoryToVec()])
 
 
 if __name__ == '__main__':

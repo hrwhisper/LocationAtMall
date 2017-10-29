@@ -9,8 +9,6 @@ from datetime import datetime
 
 import copy
 from scipy.sparse import csr_matrix
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.externals import joblib
 
 from common_helper import ModelBase, XXToVec
 

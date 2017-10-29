@@ -12,10 +12,10 @@ from sklearn.ensemble import RandomForestClassifier
 
 from common_helper import ModelBase
 from parse_data import read_train_join_mall, read_test_data
+from use_location import LocationToVec
 
-from use_location import LocationToVec3
 from use_time import TimeToVec
-from use_wifi import WifiToVec3
+from use_wifi import WifiToVec
 
 
 def split_cross_data(data, label=None, fold=5):
@@ -85,7 +85,7 @@ class CategoryPredicted(ModelBase):
 
 def train_test():
     task = CategoryPredicted()
-    func = [LocationToVec3(), WifiToVec3(), TimeToVec()]
+    func = [LocationToVec(), WifiToVec(), TimeToVec()]
     task.train_test(func, 'category_id')
     task.train_and_on_test_data(func, 'category_id')
 
