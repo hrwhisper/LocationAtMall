@@ -13,9 +13,9 @@ from sklearn.ensemble import RandomForestClassifier
 from common_helper import ModelBase
 from parse_data import read_train_join_mall, read_test_data
 
-from use_location3 import LocationToVec3
+from use_location import LocationToVec3
 from use_time import TimeToVec
-from use_wifi3 import WifiToVec3
+from use_wifi import WifiToVec3
 
 
 def split_cross_data(data, label=None, fold=5):

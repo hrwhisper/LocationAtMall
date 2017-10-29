@@ -9,15 +9,11 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
-from datetime import datetime
-from sklearn.metrics import accuracy_score
 
-from common_helper import ModelBase, XXToVec, trained_and_predict_location
-from parse_data import read_train_join_mall, read_mall_data
+from common_helper import ModelBase, XXToVec
+from parse_data import read_mall_data
 
-from use_location3 import LocationToVec3
-from use_time import TimeToVec, UseTime
-from use_wifi3 import WifiToVec3
+from use_time import TimeToVec
 
 
 class CategoryToVec(XXToVec):
