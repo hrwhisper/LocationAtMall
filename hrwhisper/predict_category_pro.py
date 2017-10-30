@@ -68,15 +68,15 @@ class CategoryPredicted(ModelBase):
                                       oof_train, oof_test)
         oof_test /= fold
 
-        joblib.dump(oof_train, self.feature_save_path + '_oof_train.pkl')
-        joblib.dump(oof_test, self.feature_save_path + '_oof_test.pkl')
+        joblib.dump(oof_train, self.feature_save_path + '_oof_train.pkl', compress=3)
+        joblib.dump(oof_test, self.feature_save_path + '_oof_test.pkl', compress=3)
 
         with open(self.feature_save_path, 'w') as f:
             f.write('row_id,{}\n'.format(','.join(str(i) for i in range(n))))
             for i, row_id in enumerate(_train_data['row_id']):
-                f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_train[row_id]))))
+                f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_train[i]))))
             for i, row_id in enumerate(_test_data['row_id']):
-                f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_test[row_id]))))
+                f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_test[i]))))
         print('done')
 
     def _trained_and_predict(self, vec_func, fold_X_train, fold_y_train, fold_X_test, fold_y_test, R_X_test,
@@ -102,6 +102,29 @@ class CategoryPredicted(ModelBase):
                 X_test)
 
 
+def recovery_probability_from_pkl():
+    _train_data = read_train_join_mall()
+    _train_data = _train_data.sort_values(by='time_stamp')
+    _train_label = _train_data['category_id'].values
+    _test_data = read_test_data()
+
+    le = preprocessing.LabelEncoder().fit(_train_label)
+    # print(le.classes_)
+    _train_label = le.transform(_train_label)
+
+    m, n = _train_data.shape[0], len(le.classes_)
+    print(m, n)
+
+    oof_train = joblib.load('./feature_save/predicted_category_pro.csv_oof_train2.pkl')
+    oof_test = joblib.load('./feature_save/predicted_category_pro.csv_oof_test2.pkl')
+    with open('./feature_save/predicted_category_pro.csv', 'w') as f:
+        f.write('row_id,{}\n'.format(','.join(str(i) for i in range(n))))
+        for i, row_id in enumerate(_train_data['row_id']):
+            f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_train[i]))))
+        for i, row_id in enumerate(_test_data['row_id']):
+            f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_test[i]))))
+
+
 def train_test():
     task = CategoryPredicted()
     func = [LocationToVec(), WifiToVec(), TimeToVec()]
@@ -109,4 +132,30 @@ def train_test():
 
 
 if __name__ == '__main__':
-    train_test()
+    # train_test()
+    # recovery_probability_from_pkl
+
+    # 修改输出文件，先将-inf变为0，然后不为0 的减去最小值。
+    # with open('./feature_save/predicted_category_pro.csv', 'r') as f:
+    #     a = f.read()
+    # with open('./feature_save/predicted_category_pro.csv', 'w') as f:
+    #     a = a.replace('-inf', '0.0')
+    #     f.write(a)
+
+    # import pandas as pd
+    #
+    # a = pd.read_csv('./feature_save/predicted_category_pro.csv')
+    # print(a[[str(i) for i in range(64)]].min().min())  # -11.354029078800002
+    with open('./feature_save/predicted_category_pro.csv', 'r') as f, \
+            open('./feature_save/predicted_category_pro2.csv', 'w') as fw:
+        for i, row in enumerate(f):
+            if i == 0:
+                fw.write(row + '\n')
+            else:
+                row = row.split(',')
+                row_id = row[0]
+                vals = list(map(float, row[1:]))
+                # print(vals)
+                vals = [(0.0 if v == 0 else v + 12) for v in vals]
+                # print(vals)
+                fw.write('{},{}\n'.format(row_id, ','.join(map(str, vals))))
