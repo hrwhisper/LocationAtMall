@@ -9,6 +9,7 @@ import os
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import KFold
 
 from common_helper import ModelBase
 from parse_data import read_train_join_mall, read_test_data
@@ -16,22 +17,6 @@ from use_location import LocationToVec
 
 from use_time import TimeToVec
 from use_wifi import WifiToVec
-
-
-def split_cross_data(data, label=None, fold=5):
-    n = data.shape[0]
-    each_len = n // fold
-    mask = np.array([True] * n)
-    for i in range(fold):
-        s, e = i * each_len, (i + 1) * each_len if i < fold - 1 else n
-        mask[s:e] = False
-        X_train, X_test = data[mask], data[~mask]
-        if label is not None:
-            y_train, y_test = label[mask], label[~mask]
-            yield X_train, X_test, y_train, y_test
-        else:
-            yield X_train, X_test
-        mask[s:e] = True
 
 
 class CategoryPredicted(ModelBase):
@@ -59,11 +44,12 @@ class CategoryPredicted(ModelBase):
         _train_data = read_train_join_mall()
         _train_data = _train_data.sort_values(by='time_stamp')
         _train_label = _train_data[target_column].values
-
+        kf = KFold(n_splits=5, random_state=self._random_state)
         ans = {}
-        for X_train, X_test, y_train, y_test in split_cross_data(_train_data, _train_label):
-            ans.update(
-                self._trained_by_mall_and_predict_location(vec_func, X_train, y_train, X_test, y_test))
+        for train_index, test_index in kf.split(_train_data):
+            X_train, y_train = _train_data.iloc[train_index], _train_label[train_index]
+            X_test, y_test = _train_data.iloc[test_index], _train_label[test_index]
+            ans.update(self._trained_by_mall_and_predict_location(vec_func, X_train, y_train, X_test, y_test))
 
         with open(self.feature_save_path, 'w') as f:
             f.write('row_id,p_category_id\n')

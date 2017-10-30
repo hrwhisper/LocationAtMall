@@ -6,6 +6,7 @@ import os
 from sklearn.ensemble import RandomForestClassifier
 
 from common_helper import ModelBase
+from use_category import CategoryToVec
 from use_location import LocationToVec
 from use_strong_wifi import WifiStrongToVec
 from use_time import TimeToVec

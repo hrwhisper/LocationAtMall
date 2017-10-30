@@ -10,7 +10,7 @@ from datetime import datetime
 
 from sklearn.externals import joblib
 
-from parse_data import read_train_join_mall
+from parse_data import read_train_join_mall, read_test_data
 from visulization_wifi import draw_wifi
 
 
@@ -141,8 +141,26 @@ def wifi_co_occurrence_analysis():
             f.write('{},{}\n'.format(mall_id, bssid))
 
 
+def wifi_empty_statics():
+    """
+    Wifi那一栏没有为空的
+    """
+    train_data = read_test_data() # read_train_join_mall()
+    counter = collections.Counter()
+    for mall_id in train_data['mall_id'].unique():
+        data = train_data[train_data['mall_id'] == mall_id]
+        for wifi_infos in data['wifi_infos']:
+            cur_wifi_len = len(wifi_infos.split(';'))
+            if cur_wifi_len == 0:
+                counter[mall_id] += 1
+
+    for mall_id, cnt in counter.items():
+        print(mall_id, cnt)
+
+
 if __name__ == '__main__':
     # many_mall_has_same_bssid()
     # check_low()
     # wifi_co_occurrence_analysis()
     _wifi_co_occurrence(read_train_join_mall())
+    # wifi_empty_statics()
