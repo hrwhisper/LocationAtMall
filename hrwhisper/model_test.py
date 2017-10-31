@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from common_helper import ModelBase
 from use_category import CategoryToVec
 from use_location import LocationToVec
+from use_location2 import LocationToVec2
 from use_strong_wifi import WifiStrongToVec
 from use_time import TimeToVec
 from use_wifi import WifiToVec
@@ -27,10 +28,12 @@ class UseTime(ModelBase):
         }
 
 
+
+
 def train_test():
     task = UseTime()
-    task.train_test([LocationToVec(), WifiToVec(), WifiStrongToVec()])
-    task.train_and_on_test_data([LocationToVec(), WifiToVec(), WifiStrongToVec()])
+    task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec()])
+    task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec()])
 
 
 if __name__ == '__main__':
