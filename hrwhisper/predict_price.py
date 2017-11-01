@@ -50,6 +50,7 @@ class CategoryPredicted(ModelBase):
         oof_test_skf = np.zeros((fold, _test_data.shape[0]))
 
         for i, (train_index, test_index) in enumerate(kf.split(_train_data)):
+            print(i)
             self._trained_and_predict(vec_func, _train_data, _train_label, _test_data, oof_train, oof_test_skf,
                                       train_index, test_index, i)
 
@@ -68,12 +69,13 @@ class CategoryPredicted(ModelBase):
 
     def _trained_and_predict(self, vec_func, _train_data, _train_label, R_X_test,
                              oof_train, oof_test, _train_index, _test_index, cur_fold):
+        mall_id_list = _train_data.iloc[_train_index]['mall_id'].unique()
         _train_index = set(_train_index)
         _test_index = set(_test_index)
         clf = list(self._get_classifiers().values())[0]
-        for ri, mall_id in enumerate(_train_data['mall_id'].unique()):
+        for ri, mall_id in enumerate(mall_id_list):
             # 先得到当前商场的所有下标，然后和训练的下标做交集才对。
-            index = set(_train_data.index[_train_data['mall_id'] == mall_id].tolist())
+            index = set(np.where(_train_data['mall_id'] == mall_id)[0])
 
             train_index = np.array(list(_train_index & index))
             test_index = np.array(list(_test_index & index))
@@ -81,8 +83,8 @@ class CategoryPredicted(ModelBase):
             data = _train_data
             label = _train_label
 
-            fold_X_train, fold_y_train = data.loc[train_index], label[train_index]
-            fold_X_test, fold_y_test = data.loc[test_index], label[test_index]
+            fold_X_train, fold_y_train = data.iloc[train_index], label[train_index]
+            fold_X_test, fold_y_test = data.iloc[test_index], label[test_index]
 
             assert len(fold_X_train['mall_id'].unique()) == 1
 
