@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Date    : 2017/10/28
+# @Date    : 2017/11/1
 # @Author  : hrwhisper
 
 import pandas as pd
@@ -10,20 +10,19 @@ from common_helper import ModelBase, XXToVec
 from parse_data import read_mall_data
 
 
-class CategoryToVec(XXToVec):
+class PriceToVec(XXToVec):
     """
-        using the category feature which has been predicted by 'predict_category.py'
+        using the price feature which has been predicted by 'predict_price.py'
     """
-    CATEGORY_ID = {_id: i for i, _id in enumerate(sorted(set(read_mall_data()['category_id'])))}
-    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_category.csv')
+    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_price.csv')
 
     def __init__(self):
-        super().__init__('./feature_save/category_features_{}_{}.pkl')
+        super().__init__('./feature_save/price_features_{}_{}.pkl')
 
     def _do_transform(self, data):
         d = data.join(self.TRAIN_CATEGORY.set_index('row_id'), on='row_id', rsuffix='_train')
-        d = d['p_category_id']
-        features = np.array([self.CATEGORY_ID[i] for i in d]).reshape(-1, 1)
+        d = d['p_price']
+        features = d.values.reshape(-1, 1)
         return csr_matrix(features)
 
     def _fit_transform(self, train_data, mall_id):
@@ -33,10 +32,9 @@ class CategoryToVec(XXToVec):
         return self._do_transform(test_data)
 
 
-
 def train_test():
     task = ModelBase()
-    task.train_test([CategoryToVec()], 'shop_id')
+    task.train_test([PriceToVec()])
     # task.train_and_on_test_data([CategoryToVec()])
 
 
