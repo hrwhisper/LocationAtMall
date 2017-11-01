@@ -4,6 +4,7 @@
 """
     Given a user feature, predict the price. the predicted price will be use as a feature for predicting shop_id.
 """
+import os
 
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
@@ -27,7 +28,7 @@ class CategoryPredicted(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'RandomForestRegressor ': RandomForestRegressor(n_estimators=100, n_jobs=4)
+            'RandomForestRegressor ': RandomForestRegressor(n_estimators=100, n_jobs=os.cpu_count() // 2)
         }
 
     def train_test(self, vec_func, target_column='price', fold=5):

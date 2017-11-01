@@ -17,9 +17,12 @@ from sklearn.model_selection import KFold
 from common_helper import ModelBase
 from parse_data import read_train_join_mall, read_test_data
 from use_location import LocationToVec
+from use_location2 import LocationToVec2
+from use_strong_wifi import WifiStrongToVec
 
 from use_time import TimeToVec
 from use_wifi import WifiToVec
+from use_wifi_kstrong import WifiKStrongToVec
 
 
 class CategoryPredicted(ModelBase):
@@ -60,12 +63,10 @@ class CategoryPredicted(ModelBase):
         oof_test = np.zeros((m, n))
         print(m, n)
 
-        for train_index, test_index in kf.split(_train_data):
-            fold_X_train, fold_y_train = _train_data.iloc[train_index], _train_label[train_index]
-            fold_X_test, fold_y_test = _train_data.iloc[test_index], _train_label[test_index]
-
-            self._trained_and_predict(vec_func, fold_X_train, fold_y_train, fold_X_test, fold_y_test, _test_data,
-                                      oof_train, oof_test)
+        for i, (train_index, test_index) in enumerate(kf.split(_train_data)):
+            print(i)
+            self._trained_and_predict(vec_func, _train_data, _train_label, _test_data, oof_train, oof_test,
+                                      train_index, test_index)
         oof_test /= fold
 
         joblib.dump(oof_train, self.feature_save_path + '_oof_train.pkl', compress=3)
@@ -79,18 +80,33 @@ class CategoryPredicted(ModelBase):
                 f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_test[i]))))
         print('done')
 
-    def _trained_and_predict(self, vec_func, fold_X_train, fold_y_train, fold_X_test, fold_y_test, R_X_test,
-                             oof_train, oof_test):
+    def _trained_and_predict(self, vec_func, _train_data, _train_label, R_X_test,
+                             oof_train, oof_test, _train_index, _test_index):
+        mall_id_list = _train_data.iloc[_train_index]['mall_id'].unique()
+        _train_index = set(_train_index)
+        _test_index = set(_test_index)
         clf = list(self._get_classifiers().values())[0]
-        for ri, mall_id in enumerate(fold_X_train['mall_id'].unique()):
+        for ri, mall_id in enumerate(mall_id_list):
+            # 先得到当前商场的所有下标，然后和训练的下标做交集才对。
+            index = set(np.where(_train_data['mall_id'] == mall_id)[0])
+
+            train_index = np.array(list(_train_index & index))
+            test_index = np.array(list(_test_index & index))
+
+            data = _train_data
+            label = _train_label
+
+            fold_X_train, fold_y_train = data.iloc[train_index], label[train_index]
+            fold_X_test, fold_y_test = data.iloc[test_index], label[test_index]
+
+            assert len(fold_X_train['mall_id'].unique()) == 1
+
             X_train, y_train, X_test, y_test = self._train_and_test_to_vec(mall_id, vec_func, fold_X_train,
                                                                            fold_y_train, fold_X_test, fold_y_test)
 
             clf.fit(X_train, y_train)
 
-            oof_train[
-                np.ix_(fold_X_test.index[fold_X_test['mall_id'] == mall_id], clf.classes_)] = clf.predict_log_proba(
-                X_test)
+            oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_log_proba(X_test)
 
             predicted = clf.predict(X_test)
 
@@ -98,7 +114,7 @@ class CategoryPredicted(ModelBase):
             print(ri, mall_id, score)
 
             X_test, _ = self._data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
-            oof_test[np.ix_(R_X_test.index[R_X_test['mall_id'] == mall_id], clf.classes_)] += clf.predict_log_proba(
+            oof_test[np.ix_(np.where(R_X_test['mall_id'] == mall_id)[0], clf.classes_)] += clf.predict_log_proba(
                 X_test)
 
 
@@ -127,12 +143,12 @@ def recovery_probability_from_pkl():
 
 def train_test():
     task = CategoryPredicted()
-    func = [LocationToVec(), WifiToVec(), TimeToVec()]
+    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec()]
     task.train_test(func, 'category_id')
 
 
 if __name__ == '__main__':
-    # train_test()
+    train_test()
     # recovery_probability_from_pkl
 
     # 修改输出文件，先将-inf变为0，然后不为0 的减去最小值。
@@ -146,16 +162,16 @@ if __name__ == '__main__':
     #
     # a = pd.read_csv('./feature_save/predicted_category_pro.csv')
     # print(a[[str(i) for i in range(64)]].min().min())  # -11.354029078800002
-    with open('./feature_save/predicted_category_pro.csv', 'r') as f, \
-            open('./feature_save/predicted_category_pro2.csv', 'w') as fw:
-        for i, row in enumerate(f):
-            if i == 0:
-                fw.write(row + '\n')
-            else:
-                row = row.split(',')
-                row_id = row[0]
-                vals = list(map(float, row[1:]))
-                # print(vals)
-                vals = [(0.0 if v == 0 else v + 12) for v in vals]
-                # print(vals)
-                fw.write('{},{}\n'.format(row_id, ','.join(map(str, vals))))
+    # with open('./feature_save/predicted_category_pro.csv', 'r') as f, \
+    #         open('./feature_save/predicted_category_pro2.csv', 'w') as fw:
+    #     for i, row in enumerate(f):
+    #         if i == 0:
+    #             fw.write(row + '\n')
+    #         else:
+    #             row = row.split(',')
+    #             row_id = row[0]
+    #             vals = list(map(float, row[1:]))
+    #             # print(vals)
+    #             vals = [(0.0 if v == 0 else v + 12) for v in vals]
+    #             # print(vals)
+    #             fw.write('{},{}\n'.format(row_id, ','.join(map(str, vals))))
