@@ -9,9 +9,11 @@ from common_helper import ModelBase
 from use_category import CategoryToVec
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
+from use_price import PriceToVec
 from use_strong_wifi import WifiStrongToVec
 from use_time import TimeToVec
 from use_wifi import WifiToVec
+from use_wifi_kstrong import WifiKStrongToVec
 
 
 class UseTime(ModelBase):
@@ -28,12 +30,10 @@ class UseTime(ModelBase):
         }
 
 
-
-
 def train_test():
     task = UseTime()
-    task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec()])
-    task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec()])
+    task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec()])
+    task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec()])
 
 
 if __name__ == '__main__':

@@ -4,20 +4,15 @@
 """
     Given a user feature, predict the price. the predicted price will be use as a feature for predicting shop_id.
 """
-import os
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.externals import joblib
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import KFold
 
 from common_helper import ModelBase
 from parse_data import read_train_join_mall, read_test_data
-from use_location import LocationToVec
 from use_location2 import LocationToVec2
-
 from use_time import TimeToVec
 from use_wifi import WifiToVec
 
@@ -25,7 +20,7 @@ from use_wifi import WifiToVec
 class CategoryPredicted(ModelBase):
     def __init__(self):
         super().__init__()
-        self.feature_save_path = './feature_save/predicted_price.csv'
+        self.feature_save_path = './feature_save/predicted_price2.csv'
 
     def _get_classifiers(self):
         """
@@ -55,11 +50,8 @@ class CategoryPredicted(ModelBase):
         oof_test_skf = np.zeros((fold, _test_data.shape[0]))
 
         for i, (train_index, test_index) in enumerate(kf.split(_train_data)):
-            fold_X_train, fold_y_train = _train_data.iloc[train_index], _train_label[train_index]
-            fold_X_test, fold_y_test = _train_data.iloc[test_index], _train_label[test_index]
-
-            self._trained_and_predict(vec_func, fold_X_train, fold_y_train, fold_X_test, fold_y_test, _test_data,
-                                      oof_train, oof_test_skf, i)
+            self._trained_and_predict(vec_func, _train_data, _train_label, _test_data, oof_train, oof_test_skf,
+                                      train_index, test_index, i)
 
         oof_test[:] = oof_test_skf.mean(axis=0)
 
@@ -74,18 +66,46 @@ class CategoryPredicted(ModelBase):
                 f.write('{},{}\n'.format(row_id, oof_test[i]))
         print('done')
 
-    def _trained_and_predict(self, vec_func, fold_X_train, fold_y_train, fold_X_test, fold_y_test, R_X_test,
-                             oof_train, oof_test, cur_fold):
+    def _trained_and_predict(self, vec_func, _train_data, _train_label, R_X_test,
+                             oof_train, oof_test, _train_index, _test_index, cur_fold):
+        _train_index = set(_train_index)
+        _test_index = set(_test_index)
         clf = list(self._get_classifiers().values())[0]
-        for ri, mall_id in enumerate(fold_X_train['mall_id'].unique()):
+        for ri, mall_id in enumerate(_train_data['mall_id'].unique()):
+            # 先得到当前商场的所有下标，然后和训练的下标做交集才对。
+            index = set(_train_data.index[_train_data['mall_id'] == mall_id].tolist())
+
+            train_index = np.array(list(_train_index & index))
+            test_index = np.array(list(_test_index & index))
+
+            data = _train_data
+            label = _train_label
+
+            fold_X_train, fold_y_train = data.loc[train_index], label[train_index]
+            fold_X_test, fold_y_test = data.loc[test_index], label[test_index]
+
+            assert len(fold_X_train['mall_id'].unique()) == 1
+
             X_train, y_train, X_test, y_test = self._train_and_test_to_vec(mall_id, vec_func, fold_X_train,
                                                                            fold_y_train, fold_X_test, fold_y_test)
 
             clf.fit(X_train, y_train)
+
+            print(X_train.shape, y_train.shape, X_test.shape)
+            print(len(test_index))
+
             predicted = clf.predict(X_test)
 
-            oof_train[fold_X_test.index[fold_X_test['mall_id'] == mall_id]] = predicted
-            score = mean_squared_error(y_test, predicted)
+            # predicted = np.array([round(i) for i in predicted])
+            print(predicted.shape)
+
+            oof_train[test_index] = predicted
+
+            # print(y_test.shape)
+            # print(y_test[:100])
+            # print(predicted[:100])
+            score = np.average(np.abs(predicted - y_test))
+            # mean_absolute_error(y_test, predicted, multioutput='raw_values')
             print(ri, mall_id, score)
 
             X_test, _ = self._data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
@@ -96,7 +116,7 @@ def train_test():
     task = CategoryPredicted()
     func = [LocationToVec2(), WifiToVec(), TimeToVec()]
     task.train_test(func, 'price')
-    task.train_and_on_test_data(func, 'price')
+    # task.train_and_on_test_data(func, 'price')
 
 
 def recovery_price_from_pkl():
@@ -106,14 +126,17 @@ def recovery_price_from_pkl():
 
     oof_train = joblib.load('./feature_save/predicted_price.csv_oof_train.pkl')
     oof_test = joblib.load('./feature_save/predicted_price.csv_oof_test.pkl')
+    print(oof_train.shape, _train_data.shape)
+    print(oof_test.shape, _test_data.shape)
+    print(oof_train[348573])
     with open('./feature_save/predicted_price.csv', 'w') as f:
         f.write('row_id,p_price\n')
-        for i, row_id in enumerate(_train_data['row_id']):
-            f.write('{},{}\n'.format(row_id, oof_train[i]))
-        for i, row_id in enumerate(_test_data['row_id']):
-            f.write('{},{}\n'.format(row_id, oof_test[i]))
+        for row_id, p in zip(_train_data['row_id'], oof_train):
+            f.write('{},{}\n'.format(row_id, p))
+        for row_id, p in zip(_train_data['row_id'], oof_test):
+            f.write('{},{}\n'.format(row_id, p))
 
 
 if __name__ == '__main__':
-    # train_test()
-    recovery_price_from_pkl()
+    train_test()
+    # recovery_price_from_pkl()
