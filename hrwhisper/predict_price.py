@@ -90,16 +90,15 @@ class CategoryPredicted(ModelBase):
 
             X_train, y_train, X_test, y_test = self._train_and_test_to_vec(mall_id, vec_func, fold_X_train,
                                                                            fold_y_train, fold_X_test, fold_y_test)
-
+            print('fit...')
             clf.fit(X_train, y_train)
+            # print(X_train.shape, y_train.shape, X_test.shape)
 
-            print(X_train.shape, y_train.shape, X_test.shape)
-            print(len(test_index))
-
+            print('predict.....')
             predicted = clf.predict(X_test)
 
             # predicted = np.array([round(i) for i in predicted])
-            print(predicted.shape)
+            # print(predicted.shape)
 
             oof_train[test_index] = predicted
 
@@ -111,7 +110,7 @@ class CategoryPredicted(ModelBase):
             print(ri, mall_id, score)
 
             X_test, _ = self._data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
-            oof_test[cur_fold, R_X_test.index[R_X_test['mall_id'] == mall_id]] += clf.predict(X_test)
+            oof_test[cur_fold, np.where(R_X_test['mall_id'] == mall_id)[0]] += clf.predict(X_test)
 
 
 def train_test():
