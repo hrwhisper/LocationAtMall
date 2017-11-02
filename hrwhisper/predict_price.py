@@ -61,7 +61,7 @@ class CategoryPredicted(ModelBase):
         joblib.dump(oof_test, self.feature_save_path + '_oof_test.pkl', compress=3)
 
         with open(self.feature_save_path, 'w') as f:
-            f.write('row_id,price\n')
+            f.write('row_id,p_price\n')
             for i, row_id in enumerate(_train_data['row_id']):
                 f.write('{},{}\n'.format(row_id, oof_train[i]))
             for i, row_id in enumerate(_test_data['row_id']):
@@ -135,10 +135,10 @@ def recovery_price_from_pkl():
         f.write('row_id,p_price\n')
         for row_id, p in zip(_train_data['row_id'], oof_train):
             f.write('{},{}\n'.format(row_id, p))
-        for row_id, p in zip(_train_data['row_id'], oof_test):
+        for row_id, p in zip(_test_data['row_id'], oof_test):
             f.write('{},{}\n'.format(row_id, p))
 
 
 if __name__ == '__main__':
-    train_test()
-    # recovery_price_from_pkl()
+    # train_test()
+    recovery_price_from_pkl()

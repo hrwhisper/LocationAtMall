@@ -11,12 +11,12 @@ def read_mall_data():
 
 def read_train_data():
     _path = '../data/train_row_id.csv'
-    return pd.read_csv(_path)
+    return pd.read_csv(_path, dtype={'row_id': str})
 
 
 def read_test_data():
     test_data_path = '../data/test.csv'
-    return pd.read_csv(test_data_path)
+    return pd.read_csv(test_data_path, dtype={'row_id': str})
 
 
 def read_train_join_mall():
@@ -32,6 +32,7 @@ def add_row_id_for_train_data():
 
 
 if __name__ == '__main__':
+    read_test_data()
     # mall_data = read_mall_data()
     # train_data = read_train_data()
     # # print(train_data.head())

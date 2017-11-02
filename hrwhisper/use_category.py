@@ -15,7 +15,7 @@ class CategoryToVec(XXToVec):
         using the category feature which has been predicted by 'predict_category.py'
     """
     CATEGORY_ID = {_id: i for i, _id in enumerate(sorted(set(read_mall_data()['category_id'])))}
-    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_category.csv')
+    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_category.csv', dtype={'row_id': str})
 
     def __init__(self):
         super().__init__('./feature_save/category_features_{}_{}.pkl')
