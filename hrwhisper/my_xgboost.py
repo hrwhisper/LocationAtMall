@@ -35,11 +35,11 @@ class MyXGBoost(object):
         self.param['num_class'] = len(self.label_encoder.classes_)
 
         X_train = xgb.DMatrix(X_train, label=y_train, nthread=self.n_jobs)
-        if X_test is not None:
+        if y_test is not None:
             y_test = self.label_encoder.transform(y_test)
             X_test = xgb.DMatrix(X_test, label=y_test, nthread=self.n_jobs)
 
-        eval_list = [(X_train, 'train')] + ([] if X_test is None else [(X_test, 'test')])
+        eval_list = [(X_train, 'train')] + ([] if y_test is None else [(X_test, 'test')])
         self.bst = xgb.train(self.param, X_train, self.number_round, eval_list,
                              early_stopping_rounds=self.early_stopping_rounds)
         return self
@@ -97,7 +97,7 @@ class UseMyXgboost(ModelBase):
 def train_test():
     XGBClassifier()
     task = UseMyXgboost()
-    task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
+    # task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
     task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
 
 
