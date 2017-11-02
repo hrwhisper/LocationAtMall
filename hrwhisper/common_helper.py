@@ -13,14 +13,6 @@ from sklearn.metrics import accuracy_score
 from parse_data import read_test_data, read_train_join_mall
 
 
-def trained_and_predict_location(cls, X_train, y_train, X_test):
-    print('fitting....')
-    cls = cls.fit(X_train, y_train)
-    print('predict....')
-    predicted = cls.predict(X_test)
-    return predicted
-
-
 def train_test_split(X, y, test_size=0.2):
     train_size = int((1 - test_size) * X.shape[0])
     return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
@@ -96,6 +88,14 @@ class ModelBase(object):
                                                     random_state=self._random_state, class_weight='balanced'),
         }
 
+    @staticmethod
+    def trained_and_predict_location(cls, X_train, y_train, X_test, y_test=None):
+        print('fitting....')
+        cls = cls.fit(X_train, y_train)
+        print('predict....')
+        predicted = cls.predict(X_test)
+        return predicted
+
     def _data_to_vec(self, mall_id, vec_func, data, label=None, is_train=True):
         vectors = [func.fit_transform(data, mall_id) if is_train else func.transform(data, mall_id)
                    for func in vec_func]
@@ -125,7 +125,7 @@ class ModelBase(object):
                                                                            train_label, test_data, test_label)
             classifiers = self._get_classifiers()
             for name, cls in classifiers.items():
-                predicted = trained_and_predict_location(cls, X_train, y_train, X_test)
+                predicted = self.trained_and_predict_location(cls, X_train, y_train, X_test, y_test)
                 for row_id, label in zip(test_data[test_data['mall_id'] == mall_id]['row_id'], predicted):
                     ans[row_id] = label
 

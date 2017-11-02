@@ -4,6 +4,7 @@
 import os
 
 from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 
 from common_helper import ModelBase
 from use_category import CategoryToVec

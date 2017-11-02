@@ -14,7 +14,7 @@ from scipy.sparse import csr_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.metrics.pairwise import cosine_similarity
 
-from common_helper import ModelBase, XXToVec, trained_and_predict_location
+from common_helper import ModelBase, XXToVec
 from use_location import get_distance_by_latitude_and_longitude
 
 
