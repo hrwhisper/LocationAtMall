@@ -74,9 +74,13 @@ class ModelBase(object):
         划分训练集依据： 总体按时间排序后20%
     """
 
-    def __init__(self, test_ratio=0.2, random_state=42):
+    def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None):
         self._test_ratio = test_ratio
         self._random_state = random_state
+        if n_jobs is None:
+            self.n_jobs = os.cpu_count() // 2 if os.name == 'nt' else os.cpu_count()
+        else:
+            self.n_jobs = n_jobs
 
     def get_name(self):
         return self.__class__.__name__
@@ -86,7 +90,7 @@ class ModelBase(object):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_jobs=os.cpu_count() // 2, n_estimators=200,
+            'random forest': RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=200,
                                                     random_state=self._random_state, class_weight='balanced'),
         }
 
@@ -174,18 +178,3 @@ class ModelBase(object):
             for row_id in test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))
         print('done')
-
-
-class BinaryModelBase(ModelBase):
-    """
-        二分类 解决多分类问题
-        划分训练集依据： 总体按时间排序后20%
-    """
-
-    @staticmethod
-    def trained_and_predict_location(cls, X_train, y_train, X_test, y_test=None):
-        print('BinaryModelBase fitting....')
-        cls = OneVsRestClassifier(cls, n_jobs=-1).fit(X_train, y_train)
-        print('predict....')
-        predicted = cls.predict(X_test)
-        return predicted

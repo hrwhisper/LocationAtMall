@@ -61,6 +61,7 @@ class UseMyXgboost(ModelBase):
         1   0.916482545294
         0.6 0.917366327883
     """
+
     def _get_classifiers(self):
         return {
             'MyXgboost':
