@@ -19,6 +19,14 @@ def train_test_split(X, y, test_size=0.2):
     return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
 
 
+def get_recommend_cpu_count():
+    """
+        windows: 只跑一半
+        linux: 为我的测试机或者服务器，满载
+    """
+    return os.cpu_count() // 2 if os.name == 'nt' else os.cpu_count()
+
+
 class XXToVec(abc.ABC):
     def __init__(self, feature_save_path):
         self.FEATURE_SAVE_PATH = feature_save_path
@@ -78,7 +86,7 @@ class ModelBase(object):
         self._test_ratio = test_ratio
         self._random_state = random_state
         if n_jobs is None:
-            self.n_jobs = os.cpu_count() // 2 if os.name == 'nt' else os.cpu_count()
+            self.n_jobs = get_recommend_cpu_count()
         else:
             self.n_jobs = n_jobs
 
