@@ -6,7 +6,7 @@ import os
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
-from common_helper import ModelBase
+from common_helper import ModelBase, BinaryModelBase
 from use_category import CategoryToVec
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
@@ -17,7 +17,21 @@ from use_wifi import WifiToVec
 from use_wifi_kstrong import WifiKStrongToVec
 
 
-class UseTime(ModelBase):
+class MultiClassifierModelTest(ModelBase):
+    def __init__(self):
+        super().__init__()
+
+    def _get_classifiers(self):
+        """
+        :return: dict. {name:classifier}
+        """
+        return {
+            'random forest': RandomForestClassifier(n_jobs=os.cpu_count() // 2, n_estimators=400,
+                                                    random_state=self._random_state, class_weight='balanced'),
+        }
+
+
+class BinaryClassifierModelTest(BinaryModelBase):
     def __init__(self):
         super().__init__()
 
@@ -32,7 +46,7 @@ class UseTime(ModelBase):
 
 
 def train_test():
-    task = UseTime()
+    task = BinaryClassifierModelTest() # MultiClassifierModelTest()
     task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
     task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
 

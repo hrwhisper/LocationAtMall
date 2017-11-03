@@ -9,6 +9,7 @@ from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
+from sklearn.multiclass import OneVsRestClassifier
 
 from parse_data import read_test_data, read_train_join_mall
 
@@ -69,6 +70,7 @@ class XXToVec(abc.ABC):
 
 class ModelBase(object):
     """
+        多分类
         划分训练集依据： 总体按时间排序后20%
     """
 
@@ -172,3 +174,18 @@ class ModelBase(object):
             for row_id in test_data['row_id']:
                 f.write('{},{}\n'.format(row_id, ans[row_id]))
         print('done')
+
+
+class BinaryModelBase(ModelBase):
+    """
+        二分类 解决多分类问题
+        划分训练集依据： 总体按时间排序后20%
+    """
+
+    @staticmethod
+    def trained_and_predict_location(cls, X_train, y_train, X_test, y_test=None):
+        print('BinaryModelBase fitting....')
+        cls = OneVsRestClassifier(cls, n_jobs=-1).fit(X_train, y_train)
+        print('predict....')
+        predicted = cls.predict(X_test)
+        return predicted
