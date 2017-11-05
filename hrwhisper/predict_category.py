@@ -14,9 +14,13 @@ from sklearn.model_selection import KFold
 from common_helper import ModelBase
 from parse_data import read_train_join_mall, read_test_data
 from use_location import LocationToVec
+from use_location2 import LocationToVec2
+from use_price import PriceToVec
+from use_strong_wifi import WifiStrongToVec
 
 from use_time import TimeToVec
 from use_wifi import WifiToVec
+from use_wifi_kstrong import WifiKStrongToVec
 
 
 class CategoryPredicted(ModelBase):
@@ -71,7 +75,7 @@ class CategoryPredicted(ModelBase):
 
 def train_test():
     task = CategoryPredicted()
-    func = [LocationToVec(), WifiToVec(), TimeToVec()]
+    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()]
     task.train_test(func, 'category_id')
     task.train_and_on_test_data(func, 'category_id')
 

@@ -18,6 +18,7 @@ from common_helper import ModelBase
 from parse_data import read_train_join_mall, read_test_data
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
+from use_price import PriceToVec
 from use_strong_wifi import WifiStrongToVec
 
 from use_time import TimeToVec
@@ -106,7 +107,10 @@ class CategoryPredicted(ModelBase):
 
             clf.fit(X_train, y_train)
 
+            t = set(list(clf.classes_))
+            other_index = np.array([i for i in range(oof_train.shape[1]) if i not in t])
             oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_log_proba(X_test)
+            oof_train[np.ix_(test_index, other_index)] = -np.inf
 
             predicted = clf.predict(X_test)
 
@@ -114,8 +118,10 @@ class CategoryPredicted(ModelBase):
             print(ri, mall_id, score)
 
             X_test, _ = self._data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
-            oof_test[np.ix_(np.where(R_X_test['mall_id'] == mall_id)[0], clf.classes_)] += clf.predict_log_proba(
-                X_test)
+
+            test_index = np.where(R_X_test['mall_id'] == mall_id)[0]
+            oof_test[np.ix_(test_index, clf.classes_)] += clf.predict_log_proba(X_test)
+            oof_train[np.ix_(test_index, other_index)] = -np.inf
 
 
 def recovery_probability_from_pkl():
@@ -143,7 +149,7 @@ def recovery_probability_from_pkl():
 
 def train_test():
     task = CategoryPredicted()
-    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec()]
+    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()]
     task.train_test(func, 'category_id')
 
 
