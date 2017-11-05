@@ -9,6 +9,7 @@ from xgboost import XGBClassifier
 
 from common_helper import ModelBase
 from use_category import CategoryToVec
+from use_category2 import CategoryToVec2
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
 from use_price import PriceToVec
@@ -16,7 +17,6 @@ from use_strong_wifi import WifiStrongToVec
 from use_time import TimeToVec
 from use_wifi import WifiToVec
 from use_wifi_kstrong import WifiKStrongToVec
-
 
 
 class ModelTest(ModelBase):
@@ -28,15 +28,31 @@ class ModelTest(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': OneVsRestClassifier(RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400,
-                                                    random_state=self._random_state, class_weight='balanced')),
+            'random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
+                                                                        random_state=1119,
+                                                                        class_weight='balanced')
+                                                 , n_jobs=self.n_jobs),
+            # 'xgb': OneVsRestClassifier(XGBClassifier(colsample_bytree=0.7,
+            #                                          learning_rate=0.025,
+            #                                          max_depth=6,
+            #                                          min_child_weight=1,
+            #                                          missing=-999,
+            #                                          n_jobs=os.cpu_count() // 3 * 2,
+            #                                          n_estimators=500,
+            #                                          objective='binary:logistic',
+            #                                          random_state=1024,
+            #                                          _silent=1,
+            #                                          subsample=0.6
+            #                                          ))
         }
 
 
 def train_test():
     task = ModelTest()
-    task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
-    task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
+    task.train_test(
+        [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec(), CategoryToVec2()])
+    task.train_and_on_test_data(
+        [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec(), CategoryToVec2()])
 
 
 if __name__ == '__main__':

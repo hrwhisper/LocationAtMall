@@ -14,8 +14,11 @@ from sklearn.model_selection import KFold
 from common_helper import ModelBase, DataVector
 from parse_data import read_train_join_mall, read_test_data
 from use_location2 import LocationToVec2
+from use_price import PriceToVec
+from use_strong_wifi import WifiStrongToVec
 from use_time import TimeToVec
 from use_wifi import WifiToVec
+from use_wifi_kstrong import WifiKStrongToVec
 
 
 class CategoryPredicted(ModelBase):
@@ -50,15 +53,19 @@ class CategoryPredicted(ModelBase):
         oof_test = np.zeros((_test_data.shape[0],))
         oof_test_skf = np.zeros((fold, _test_data.shape[0]))
 
+        fold_error = 0
         for i, (train_index, test_index) in enumerate(kf.split(_train_data)):
             print(i)
-            self._trained_and_predict(vec_func, _train_data, _train_label, _test_data, oof_train, oof_test_skf,
-                                      train_index, test_index, i)
+            fold_error += self._trained_and_predict(vec_func, _train_data, _train_label, _test_data, oof_train,
+                                                    oof_test_skf,
+                                                    train_index, test_index, i)
 
         oof_test[:] = oof_test_skf.mean(axis=0)
 
         joblib.dump(oof_train, self.feature_save_path + '_oof_train.pkl', compress=3)
         joblib.dump(oof_test, self.feature_save_path + '_oof_test.pkl', compress=3)
+
+        print(fold_error / fold)
 
         with open(self.feature_save_path, 'w') as f:
             f.write('row_id,p_price\n')
@@ -70,10 +77,11 @@ class CategoryPredicted(ModelBase):
 
     def _trained_and_predict(self, vec_func, _train_data, _train_label, R_X_test,
                              oof_train, oof_test, _train_index, _test_index, cur_fold):
-        mall_id_list = _train_data.iloc[_train_index]['mall_id'].unique()
+        mall_id_list = sorted(list(_train_data.iloc[_train_index]['mall_id'].unique()))
         _train_index = set(_train_index)
         _test_index = set(_test_index)
         clf = list(self._get_classifiers().values())[0]
+        total_error = 0
         for ri, mall_id in enumerate(mall_id_list):
             # 先得到当前商场的所有下标，然后和训练的下标做交集才对。
             index = set(np.where(_train_data['mall_id'] == mall_id)[0])
@@ -106,17 +114,20 @@ class CategoryPredicted(ModelBase):
             # print(y_test.shape)
             # print(y_test[:100])
             # print(predicted[:100])
-            score = np.average(np.abs(predicted - y_test))
+            error = np.average(np.abs(predicted - y_test))
+            total_error += error
             # mean_absolute_error(y_test, predicted, multioutput='raw_values')
-            print(ri, mall_id, score)
+            print(ri, mall_id, error)
 
             X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
             oof_test[cur_fold, np.where(R_X_test['mall_id'] == mall_id)[0]] += clf.predict(X_test)
 
+        return total_error / len(mall_id_list)
+
 
 def train_test():
     task = CategoryPredicted()
-    func = [LocationToVec2(), WifiToVec(), TimeToVec()]
+    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()]
     task.train_test(func, 'price')
     # task.train_and_on_test_data(func, 'price')
 
@@ -140,5 +151,5 @@ def recovery_price_from_pkl():
 
 
 if __name__ == '__main__':
-    # train_test()
-    recovery_price_from_pkl()
+    train_test()
+    # recovery_price_from_pkl()
