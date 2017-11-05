@@ -28,10 +28,10 @@ class ModelTest(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
-                                                                        random_state=1119,
-                                                                        class_weight='balanced')
-                                                 , n_jobs=self.n_jobs),
+            'random forest': OneVsRestClassifier(RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400,
+                                                                        random_state=self._random_state,
+                                                                        class_weight='balanced'),
+                                                 n_jobs=self.n_jobs),
             # 'xgb': OneVsRestClassifier(XGBClassifier(colsample_bytree=0.7,
             #                                          learning_rate=0.025,
             #                                          max_depth=6,
@@ -50,9 +50,9 @@ class ModelTest(ModelBase):
 def train_test():
     task = ModelTest()
     task.train_test(
-        [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec(), CategoryToVec2()])
+        [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
     task.train_and_on_test_data(
-        [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec(), CategoryToVec2()])
+        [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
 
 
 if __name__ == '__main__':
