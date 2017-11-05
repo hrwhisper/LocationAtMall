@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.externals import joblib
 from sklearn.model_selection import KFold
 
-from common_helper import ModelBase
+from common_helper import ModelBase, DataVector
 from parse_data import read_train_join_mall, read_test_data
 from use_location2 import LocationToVec2
 from use_time import TimeToVec
@@ -89,8 +89,8 @@ class CategoryPredicted(ModelBase):
 
             assert len(fold_X_train['mall_id'].unique()) == 1
 
-            X_train, y_train, X_test, y_test = self._train_and_test_to_vec(mall_id, vec_func, fold_X_train,
-                                                                           fold_y_train, fold_X_test, fold_y_test)
+            X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, vec_func, fold_X_train,
+                                                                                fold_y_train, fold_X_test, fold_y_test)
             print('fit...')
             clf.fit(X_train, y_train)
             # print(X_train.shape, y_train.shape, X_test.shape)
@@ -110,7 +110,7 @@ class CategoryPredicted(ModelBase):
             # mean_absolute_error(y_test, predicted, multioutput='raw_values')
             print(ri, mall_id, score)
 
-            X_test, _ = self._data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
+            X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
             oof_test[cur_fold, np.where(R_X_test['mall_id'] == mall_id)[0]] += clf.predict(X_test)
 
 

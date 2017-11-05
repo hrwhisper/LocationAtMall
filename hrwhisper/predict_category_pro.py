@@ -14,7 +14,7 @@ from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
 
-from common_helper import ModelBase
+from common_helper import ModelBase, DataVector
 from parse_data import read_train_join_mall, read_test_data
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
@@ -102,8 +102,9 @@ class CategoryPredicted(ModelBase):
 
             assert len(fold_X_train['mall_id'].unique()) == 1
 
-            X_train, y_train, X_test, y_test = self._train_and_test_to_vec(mall_id, vec_func, fold_X_train,
-                                                                           fold_y_train, fold_X_test, fold_y_test)
+            X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, vec_func, fold_X_train,
+                                                                                fold_y_train, fold_X_test,
+                                                                                fold_y_test)
 
             clf.fit(X_train, y_train)
 
@@ -117,7 +118,7 @@ class CategoryPredicted(ModelBase):
             score = accuracy_score(y_test, predicted)
             print(ri, mall_id, score)
 
-            X_test, _ = self._data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
+            X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
 
             test_index = np.where(R_X_test['mall_id'] == mall_id)[0]
             oof_test[np.ix_(test_index, clf.classes_)] += clf.predict_log_proba(X_test)

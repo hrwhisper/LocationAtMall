@@ -9,7 +9,7 @@ from sklearn.model_selection import GridSearchCV, KFold, StratifiedKFold
 from sklearn.multiclass import OneVsRestClassifier
 from xgboost import XGBClassifier
 
-from common_helper import ModelBase, get_recommend_cpu_count, train_test_split
+from common_helper import get_recommend_cpu_count,  DataVector
 from parse_data import read_train_join_mall
 from use_location2 import LocationToVec2
 from use_price import PriceToVec
@@ -60,12 +60,11 @@ def grid_search_xgboost(clf):
     train_data = train_data.sort_values(by='time_stamp')
     train_label = preprocessing.LabelEncoder().fit_transform(train_data['shop_id'])
 
-    b = ModelBase()
     for mall_id in train_data['mall_id'].unique():
-        X_train, y_train = b._data_to_vec(mall_id,
-                                          [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(),
-                                           PriceToVec()],
-                                          train_data, train_label)
+        X_train, y_train = DataVector.data_to_vec(mall_id,
+                                     [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(),
+                                      PriceToVec()],
+                                     train_data, train_label)
         # print('fit.....')
         clf.fit(X_train, y_train)
         # print('fit done')

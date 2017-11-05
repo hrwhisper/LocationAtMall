@@ -76,6 +76,37 @@ class XXToVec(abc.ABC):
         return features
 
 
+class DataVectorHelper(object):
+    def __init__(self, funcs, data, mall_id):
+        self.funcs = funcs
+        self._data = data
+        self._mall_id = mall_id
+
+    def _helper(self, func):
+        return func(self._data, self._mall_id)
+
+    def start_to_vec(self):
+        print('data to vector....')
+        vectors = [func(self._data, self._mall_id) for func in self.funcs]
+        return vectors
+
+
+class DataVector(object):
+    @staticmethod
+    def data_to_vec(mall_id, vec_func, data, label=None, is_train=True):
+        funcs = [func.fit_transform if is_train else func.transform for func in vec_func]
+        vectors = DataVectorHelper(funcs, data, mall_id).start_to_vec()
+        X = sparse.hstack(vectors)
+        y = label[data['mall_id'] == mall_id] if label is not None else None
+        return X, y
+
+    @staticmethod
+    def train_and_test_to_vec(mall_id, vec_func, train_data, train_label, test_data, test_label=None):
+        X_train, y_train = DataVector.data_to_vec(mall_id, vec_func, train_data, train_label)
+        X_test, y_test = DataVector.data_to_vec(mall_id, vec_func, test_data, test_label, is_train=False)
+        return X_train, y_train, X_test, y_test
+
+
 class ModelBase(object):
     """
         多分类
@@ -110,18 +141,6 @@ class ModelBase(object):
         predicted = cls.predict(X_test)
         return predicted
 
-    def _data_to_vec(self, mall_id, vec_func, data, label=None, is_train=True):
-        vectors = [func.fit_transform(data, mall_id) if is_train else func.transform(data, mall_id)
-                   for func in vec_func]
-        X = sparse.hstack(vectors)
-        y = label[data['mall_id'] == mall_id] if label is not None else None
-        return X, y
-
-    def _train_and_test_to_vec(self, mall_id, vec_func, train_data, train_label, test_data, test_label=None):
-        X_train, y_train = self._data_to_vec(mall_id, vec_func, train_data, train_label)
-        X_test, y_test = self._data_to_vec(mall_id, vec_func, test_data, test_label, is_train=False)
-        return X_train, y_train, X_test, y_test
-
     def _trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data, test_label=None):
         """
 
@@ -135,8 +154,9 @@ class ModelBase(object):
         ans = {}
         cls_report = {}
         for ri, mall_id in enumerate(train_data['mall_id'].unique()):
-            X_train, y_train, X_test, y_test = self._train_and_test_to_vec(mall_id, vec_func, train_data,
-                                                                           train_label, test_data, test_label)
+            X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, vec_func, train_data,
+                                                                                train_label, test_data,
+                                                                                test_label)
             classifiers = self._get_classifiers()
             for name, cls in classifiers.items():
                 predicted = self.trained_and_predict_location(cls, X_train, y_train, X_test, y_test)
