@@ -28,7 +28,7 @@ class ModelTest(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': OneVsRestClassifier(RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400,
+            'random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
                                                                         random_state=self._random_state,
                                                                         class_weight='balanced'),
                                                  n_jobs=self.n_jobs),
