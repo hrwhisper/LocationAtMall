@@ -26,7 +26,7 @@ class WifiToVec(XXToVec):
     def _fit_transform(self, train_data, mall_id):
         wifi_and_date = collections.defaultdict(set)
         wifi_rows = []
-        # 去除同一条记录中多个bssid
+        # 去除移动热点
         for wifi_infos, _time in zip(train_data['wifi_infos'], train_data['time_stamp']):
             _time = datetime.strptime(_time, "%Y-%m-%d %H:%M")
             for wifi in wifi_infos.split(';'):
