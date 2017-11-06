@@ -18,6 +18,7 @@ from use_wifi import WifiToVec
 from use_wifi_kstrong import WifiKStrongToVec
 
 
+
 class ModelTest(ModelBase):
     def __init__(self):
         super().__init__(save_model=True)
@@ -27,9 +28,10 @@ class ModelTest(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': OneVsRestClassifier(RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400,
+            'random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
                                                                         random_state=self._random_state,
-                                                                        class_weight='balanced')),
+                                                                        class_weight='balanced'),
+                                                 n_jobs=self.n_jobs),
             # 'xgb': OneVsRestClassifier(XGBClassifier(colsample_bytree=0.7,
             #                                          learning_rate=0.025,
             #                                          max_depth=6,

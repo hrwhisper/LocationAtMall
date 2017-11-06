@@ -15,7 +15,8 @@ class CategoryToVec2(XXToVec):
         using the category feature which has been predicted by 'predict_category.py'
     """
     CATEGORY_ID_LEN = len(read_mall_data()['category_id'].unique())
-    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_category_pro2.csv', dtype={'row_id': str})
+    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_category_pro.csv',
+                                 dtype={'row_id': str}).replace([-np.inf], -999)
 
     def __init__(self):
         super().__init__('./feature_save/time_features_{}_{}.pkl')

@@ -83,7 +83,7 @@ class CategoryPredicted(ModelBase):
 
     def _trained_and_predict(self, vec_func, _train_data, _train_label, R_X_test,
                              oof_train, oof_test, _train_index, _test_index):
-        mall_id_list = _train_data.iloc[_train_index]['mall_id'].unique()
+        mall_id_list = sorted(list(_train_data.iloc[_train_index]['mall_id'].unique()))
         _train_index = set(_train_index)
         _test_index = set(_test_index)
         clf = list(self._get_classifiers().values())[0]
@@ -156,29 +156,3 @@ def train_test():
 
 if __name__ == '__main__':
     train_test()
-    # recovery_probability_from_pkl
-
-    # 修改输出文件，先将-inf变为0，然后不为0 的减去最小值。
-    # with open('./feature_save/predicted_category_pro.csv', 'r') as f:
-    #     a = f.read()
-    # with open('./feature_save/predicted_category_pro.csv', 'w') as f:
-    #     a = a.replace('-inf', '0.0')
-    #     f.write(a)
-
-    # import pandas as pd
-    #
-    # a = pd.read_csv('./feature_save/predicted_category_pro.csv')
-    # print(a[[str(i) for i in range(64)]].min().min())  # -11.354029078800002
-    # with open('./feature_save/predicted_category_pro.csv', 'r') as f, \
-    #         open('./feature_save/predicted_category_pro2.csv', 'w') as fw:
-    #     for i, row in enumerate(f):
-    #         if i == 0:
-    #             fw.write(row + '\n')
-    #         else:
-    #             row = row.split(',')
-    #             row_id = row[0]
-    #             vals = list(map(float, row[1:]))
-    #             # print(vals)
-    #             vals = [(0.0 if v == 0 else v + 12) for v in vals]
-    #             # print(vals)
-    #             fw.write('{},{}\n'.format(row_id, ','.join(map(str, vals))))
