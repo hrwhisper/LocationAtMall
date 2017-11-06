@@ -110,7 +110,7 @@ class CategoryPredicted(ModelBase):
 
             t = set(list(clf.classes_))
             other_index = np.array([i for i in range(oof_train.shape[1]) if i not in t])
-            oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_log_proba(X_test)
+            oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_proba(X_test)
             oof_train[np.ix_(test_index, other_index)] = -np.inf
 
             predicted = clf.predict(X_test)
@@ -121,7 +121,7 @@ class CategoryPredicted(ModelBase):
             X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
 
             test_index = np.where(R_X_test['mall_id'] == mall_id)[0]
-            oof_test[np.ix_(test_index, clf.classes_)] += clf.predict_log_proba(X_test)
+            oof_test[np.ix_(test_index, clf.classes_)] += clf.predict_proba(X_test)
             oof_test[np.ix_(test_index, other_index)] = -np.inf
 
 

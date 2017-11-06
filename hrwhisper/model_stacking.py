@@ -158,14 +158,14 @@ class ModelStacking(ModelBase):
                 safe_dump_model(clf, cur_save_path)
         else:
             clf = joblib.load(cur_save_path)
-        oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_log_proba(X_test)
+        oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_proba(X_test)
 
         predicted = clf.predict(X_test)
         score = accuracy_score(y_test, predicted)
         print('mall_id: {}  cur_fold: {}  classifier name: {}  score: {}'.format(mall_id, cur_fold, clf_name, score))
 
         X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
-        oof_test[:, clf.classes_] += clf.predict_log_proba(X_test)
+        oof_test[:, clf.classes_] += clf.predict_proba(X_test)
 
 
 def train_test():
