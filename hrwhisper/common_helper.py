@@ -19,11 +19,13 @@ def train_test_split(X, y, test_size=0.2):
     return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
 
 
-def safe_dump_model(model, save_path):
+def safe_dump_model(model, save_path, compress=3):
+    print('save model......')
     dir_name = os.path.dirname(save_path)
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
-    joblib.dump(model, save_path, compress=3)
+    joblib.dump(model, save_path, compress=compress)
+    print('save model done.')
 
 
 def get_recommend_cpu_count():
@@ -125,7 +127,7 @@ class ModelBase(object):
         self._random_state = random_state
         self.n_jobs = get_recommend_cpu_count() if n_jobs is None else n_jobs
         self.SAVE_MODEL = save_model
-        self.SAVE_MODEL_PATH = save_model_base_path if save_model_base_path is not None else './model_save/'
+        self.SAVE_MODEL_BASE_PATH = save_model_base_path if save_model_base_path is not None else './model_save/'
 
     def get_name(self):
         return self.__class__.__name__
@@ -135,7 +137,7 @@ class ModelBase(object):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=200,
+            'random forest': RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400,
                                                     random_state=self._random_state, class_weight='balanced'),
         }
 
@@ -159,6 +161,7 @@ class ModelBase(object):
         """
         ans = {}
         clf_report = {}
+        is_train = test_label is not None
         for ri, mall_id in enumerate(train_data['mall_id'].unique()):
             X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, vec_func, train_data,
                                                                                 train_label, test_data,
@@ -167,19 +170,19 @@ class ModelBase(object):
             for name, clf in classifiers.items():
                 predicted = self.trained_and_predict_location(clf, X_train, y_train, X_test, y_test)
                 if self.SAVE_MODEL:
-                    safe_dump_model(clf, '{}/{}/{}_{}'.format(self.SAVE_MODEL_PATH, name,
-                                                              'train' if test_label is not None else 'test', mall_id))
+                    safe_dump_model(clf, '{}/{}/{}_{}'.format(self.SAVE_MODEL_BASE_PATH, name,
+                                                              'train' if is_train else 'test', mall_id))
                 for row_id, label in zip(test_data[test_data['mall_id'] == mall_id]['row_id'], predicted):
                     ans[row_id] = label
 
-                if test_label is not None:
+                if is_train:
                     score = accuracy_score(y_test, predicted)
                     clf_report[name] = clf_report.get(name, 0) + score
                     print(ri, mall_id, name, score)
                 else:
                     print(ri, mall_id)
 
-        if test_label is not None:
+        if is_train:
             cnt = train_data['mall_id'].unique().shape[0]
             classifiers = self._get_classifiers()
             for name, score in clf_report.items():

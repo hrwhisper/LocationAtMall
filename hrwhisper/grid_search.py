@@ -9,7 +9,7 @@ from sklearn.model_selection import GridSearchCV, KFold, StratifiedKFold
 from sklearn.multiclass import OneVsRestClassifier
 from xgboost import XGBClassifier
 
-from common_helper import get_recommend_cpu_count,  DataVector
+from common_helper import get_recommend_cpu_count, DataVector
 from parse_data import read_train_join_mall
 from use_location2 import LocationToVec2
 from use_price import PriceToVec
@@ -19,7 +19,7 @@ from use_wifi_kstrong import WifiKStrongToVec
 
 
 def multiclass_xgboost():
-    parameters = {'estimator__n_jobs': [2],
+    parameters = {'estimator__n_jobs': [1],
                   'objective': ['multi:softmax'],
                   'learning_rate': [0.025, 0.05, 0.1],
                   'max_depth': [6, 7, 8, 10],
@@ -37,20 +37,24 @@ def multiclass_xgboost():
 
 
 def binary_xgboost():
-    parameters = {'estimator__n_jobs': [2],
+    parameters = {'estimator__n_jobs': [1],
                   'estimator__objective': ['binary:logistic'],
-                  'estimator__learning_rate': [0.025, 0.05, 0.1],
-                  'estimator__max_depth': [6, 7, 8, 10],
-                  'estimator__min_child_weight': [1],
-                  'estimator__silent': [1],
-                  'estimator__subsample': [0.6, 0.8, 0.9, 1],
-                  'estimator__colsample_bytree': [0.7, 0.8, 0.9],
+                  'estimator__learning_rate': [0.01, 0.025, 0.05, 0.1],  # 0.015,
+                  'estimator__max_depth': [5, 7, 9, 12, 15],  # 3, 17
+                  'estimator__gamma': [0, 0.05, 0.1],  # 0.3 0.75
+                  'estimator__min_child_weight': [1, 3, 5],  # 7
+                  'estimator__subsample': [0.6, 0.7, 0.8, 1.0],  # 0.9,
+                  'estimator__colsample_bytree': [0.6, 0.7, 0.8, 1.0],  # 0.9,
+                  'estimator__reg_alpha': [0, 0.1, ],  # 0.5
+                  'estimator__reg_lambda': [0.01, 0.05, 1],  # 0.01,
                   'estimator__n_estimators': [600],
+                  'estimator__silent': [1],
                   'estimator__missing': [-999],
-                  'estimator__random_state': [1080]}
+                  'estimator__random_state': [1080],
+                  }
 
     clf = GridSearchCV(OneVsRestClassifier(XGBClassifier()), parameters, n_jobs=get_recommend_cpu_count() // 2,
-                       cv=KFold(n_splits=5, random_state=42),
+                       cv=KFold(n_splits=3, random_state=42),
                        verbose=1, refit=True)
     return clf
 
@@ -62,9 +66,9 @@ def grid_search_xgboost(clf):
 
     for mall_id in train_data['mall_id'].unique():
         X_train, y_train = DataVector.data_to_vec(mall_id,
-                                     [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(),
-                                      PriceToVec()],
-                                     train_data, train_label)
+                                                  [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(),
+                                                   PriceToVec()],
+                                                  train_data, train_label)
         # print('fit.....')
         clf.fit(X_train, y_train)
         # print('fit done')

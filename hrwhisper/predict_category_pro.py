@@ -122,7 +122,7 @@ class CategoryPredicted(ModelBase):
 
             test_index = np.where(R_X_test['mall_id'] == mall_id)[0]
             oof_test[np.ix_(test_index, clf.classes_)] += clf.predict_log_proba(X_test)
-            oof_train[np.ix_(test_index, other_index)] = -np.inf
+            oof_test[np.ix_(test_index, other_index)] = -np.inf
 
 
 def recovery_probability_from_pkl():
