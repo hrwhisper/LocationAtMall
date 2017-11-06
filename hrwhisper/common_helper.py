@@ -19,6 +19,13 @@ def train_test_split(X, y, test_size=0.2):
     return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
 
 
+def safe_dump_model(model, save_path):
+    dir_name = os.path.dirname(save_path)
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+    joblib.dump(model, save_path, compress=3)
+
+
 def get_recommend_cpu_count():
     """
         windows: 只跑一半
@@ -52,7 +59,7 @@ class XXToVec(abc.ABC):
             train_data = train_data.loc[train_data['mall_id'] == mall_id]
             features = self._fit_transform(train_data, mall_id)
             if should_save:
-                joblib.dump(features, self.FEATURE_SAVE_PATH.format('train', mall_id))
+                safe_dump_model(features, self.FEATURE_SAVE_PATH.format('train', mall_id))
         else:
             features = joblib.load(self.FEATURE_SAVE_PATH.format('train', mall_id))
         return features
@@ -70,7 +77,7 @@ class XXToVec(abc.ABC):
             test_data = test_data.loc[test_data['mall_id'] == mall_id]
             features = self._transform(test_data, mall_id)
             if should_save:
-                joblib.dump(features, self.FEATURE_SAVE_PATH.format('test', mall_id))
+                safe_dump_model(features, self.FEATURE_SAVE_PATH.format('test', mall_id))
         else:
             features = joblib.load(self.FEATURE_SAVE_PATH.format('test', mall_id))
         return features
@@ -113,13 +120,12 @@ class ModelBase(object):
         划分训练集依据： 总体按时间排序后20%
     """
 
-    def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None):
+    def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None, save_model=False, save_model_base_path=None):
         self._test_ratio = test_ratio
         self._random_state = random_state
-        if n_jobs is None:
-            self.n_jobs = get_recommend_cpu_count()
-        else:
-            self.n_jobs = n_jobs
+        self.n_jobs = get_recommend_cpu_count() if n_jobs is None else n_jobs
+        self.SAVE_MODEL = save_model
+        self.SAVE_MODEL_PATH = save_model_base_path if save_model_base_path is not None else './model_save/'
 
     def get_name(self):
         return self.__class__.__name__
@@ -152,20 +158,23 @@ class ModelBase(object):
         :return:
         """
         ans = {}
-        cls_report = {}
+        clf_report = {}
         for ri, mall_id in enumerate(train_data['mall_id'].unique()):
             X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, vec_func, train_data,
                                                                                 train_label, test_data,
                                                                                 test_label)
             classifiers = self._get_classifiers()
-            for name, cls in classifiers.items():
-                predicted = self.trained_and_predict_location(cls, X_train, y_train, X_test, y_test)
+            for name, clf in classifiers.items():
+                predicted = self.trained_and_predict_location(clf, X_train, y_train, X_test, y_test)
+                if self.SAVE_MODEL:
+                    safe_dump_model(clf, '{}/{}/{}_{}'.format(self.SAVE_MODEL_PATH, name,
+                                                              'train' if test_label is not None else 'test', mall_id))
                 for row_id, label in zip(test_data[test_data['mall_id'] == mall_id]['row_id'], predicted):
                     ans[row_id] = label
 
                 if test_label is not None:
                     score = accuracy_score(y_test, predicted)
-                    cls_report[name] = cls_report.get(name, 0) + score
+                    clf_report[name] = clf_report.get(name, 0) + score
                     print(ri, mall_id, name, score)
                 else:
                     print(ri, mall_id)
@@ -173,7 +182,7 @@ class ModelBase(object):
         if test_label is not None:
             cnt = train_data['mall_id'].unique().shape[0]
             classifiers = self._get_classifiers()
-            for name, score in cls_report.items():
+            for name, score in clf_report.items():
                 print("{} Mean: {}".format(classifiers[name], score / cnt))
         return ans
 
@@ -198,6 +207,7 @@ class ModelBase(object):
         test_data = read_test_data()
 
         ans = self._trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data)
+
         _save_path = './result'
         if not os.path.exists(_save_path):
             os.mkdir(_save_path)
