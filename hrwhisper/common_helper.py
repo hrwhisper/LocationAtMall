@@ -210,12 +210,19 @@ class ModelBase(object):
         test_data = read_test_data()
 
         ans = self._trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data)
+        self.result_to_csv(ans, test_data)
 
+    @staticmethod
+    def result_to_csv(ans, test_data=None):
         _save_path = './result'
         if not os.path.exists(_save_path):
             os.mkdir(_save_path)
         with open(_save_path + '/hrwhisper_res_{}.csv'.format(time.strftime("%Y-%m-%d-%H-%M-%S")), 'w') as f:
             f.write('row_id,shop_id\n')
-            for row_id in test_data['row_id']:
-                f.write('{},{}\n'.format(row_id, ans[row_id]))
+            if test_data is not None:
+                for row_id in test_data['row_id']:
+                    f.write('{},{}\n'.format(row_id, ans[row_id]))
+            else:
+                for row_id, shop_id in ans.items():
+                    f.write('{},{}\n'.format(row_id, shop_id))
         print('done')
