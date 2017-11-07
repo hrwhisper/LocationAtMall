@@ -2,10 +2,6 @@
 # @Date    : 2017/11/6
 # @Author  : hrwhisper
 
-
-# -*- coding: utf-8 -*-
-# @Date    : 2017/10/29
-# @Author  : hrwhisper
 import os
 
 import numpy as np
@@ -62,19 +58,19 @@ class ModelStacking(ModelBase):
             #                      random_state=1024,
             #                      _silent=1,
             #                      subsample=0.6),
-            # 'binary xgb': OneVsRestClassifier(XGBClassifier(colsample_bytree=0.7,
-            #                                                 learning_rate=0.025,
-            #                                                 max_depth=6,
-            #                                                 min_child_weight=1,
-            #                                                 missing=-999,
-            #                                                 # n_jobs=os.cpu_count() // 3 * 2,
-            #                                                 n_estimators=500,
-            #                                                 objective='binary:logistic',
-            #                                                 random_state=1024,
-            #                                                 _silent=1,
-            #                                                 subsample=0.6
-            #                                                 )
-            #                                   , n_jobs=self.n_jobs)
+            'binary xgb': OneVsRestClassifier(XGBClassifier(colsample_bytree=0.7,
+                                                            learning_rate=0.025,
+                                                            max_depth=6,
+                                                            min_child_weight=1,
+                                                            missing=-999,
+                                                            # n_jobs=os.cpu_count() // 3 * 2,
+                                                            n_estimators=500,
+                                                            objective='binary:logistic',
+                                                            random_state=1024,
+                                                            _silent=1,
+                                                            subsample=0.6
+                                                            )
+                                              , n_jobs=self.n_jobs)
         }
 
     def train_test(self, vec_func, target_column='shop_id', fold=5):
@@ -116,6 +112,7 @@ class ModelStacking(ModelBase):
 
             new_train_feature = np.hstack(new_train_feature)
             new_test_feature = np.hstack(new_test_feature)
+            # print(new_train_feature.shape)
 
             # ------- second layer.
             clf = self._get_classifiers()['random forest']
@@ -128,7 +125,7 @@ class ModelStacking(ModelBase):
                 ans[row_id] = label
 
             # ---------to report accuracy score
-            train_data, test_data, train_label, test_label = train_test_split(new_train_feature, new_test_feature,
+            train_data, test_data, train_label, test_label = train_test_split(new_train_feature, train_label,
                                                                               self._test_ratio)
             predicted = self.trained_and_predict_location(clf, train_data, train_label, test_data, test_label)
             score = accuracy_score(test_label, predicted)
@@ -158,14 +155,22 @@ class ModelStacking(ModelBase):
                 safe_dump_model(clf, cur_save_path)
         else:
             clf = joblib.load(cur_save_path)
-        oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_proba(X_test)
+
+        res = clf.predict_proba(X_test)
+        res[np.isnan(res)] = 0
+        oof_train[np.ix_(test_index, clf.classes_)] = res
 
         predicted = clf.predict(X_test)
         score = accuracy_score(y_test, predicted)
-        print('mall_id: {}  cur_fold: {}  classifier name: {}  score: {}'.format(mall_id, cur_fold, clf_name, score))
 
         X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
-        oof_test[:, clf.classes_] += clf.predict_proba(X_test)
+
+        res = clf.predict_proba(X_test)
+        # set the inf to zero. OneVsRestClassifier has done normalized, it cause some value to inf.
+        res[np.isnan(res)] = 0
+        oof_test[:, clf.classes_] += res
+
+        print('mall_id: {}  cur_fold: {}  classifier name: {}  score: {}'.format(mall_id, cur_fold, clf_name, score))
 
 
 def train_test():

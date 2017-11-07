@@ -9,6 +9,7 @@ from xgboost import XGBClassifier
 
 from common_helper import ModelBase
 from use_category import CategoryToVec
+from use_category2 import CategoryToVec2
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
 from use_price import PriceToVec
@@ -28,11 +29,11 @@ class ModelTest(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_estimators=400,
-                                                    bootstrap=False,
-                                                    random_state=self._random_state,
-                                                    class_weight='balanced',
-                                                    n_jobs=self.n_jobs),
+            # 'random forest': RandomForestClassifier(n_estimators=400,
+            #                                         bootstrap=False,
+            #                                         random_state=self._random_state,
+            #                                         class_weight='balanced',
+            #                                         n_jobs=self.n_jobs),
             'binary random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
                                                                                bootstrap=False,
                                                                                random_state=self._random_state,

@@ -36,7 +36,7 @@ class CategoryPredicted(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_jobs=os.cpu_count() // 2, n_estimators=400,
+            'random forest': RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400, bootstrap=False,
                                                     random_state=self._random_state, class_weight='balanced'),
         }
 
@@ -111,7 +111,7 @@ class CategoryPredicted(ModelBase):
             t = set(list(clf.classes_))
             other_index = np.array([i for i in range(oof_train.shape[1]) if i not in t])
             oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_proba(X_test)
-            oof_train[np.ix_(test_index, other_index)] = -np.inf
+            oof_train[np.ix_(test_index, other_index)] = 0
 
             predicted = clf.predict(X_test)
 
@@ -122,7 +122,7 @@ class CategoryPredicted(ModelBase):
 
             test_index = np.where(R_X_test['mall_id'] == mall_id)[0]
             oof_test[np.ix_(test_index, clf.classes_)] += clf.predict_proba(X_test)
-            oof_test[np.ix_(test_index, other_index)] = -np.inf
+            oof_test[np.ix_(test_index, other_index)] = 0
 
 
 def recovery_probability_from_pkl():

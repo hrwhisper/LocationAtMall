@@ -5,6 +5,7 @@ import abc
 import os
 import time
 
+import numpy as np
 from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
@@ -16,7 +17,10 @@ from parse_data import read_test_data, read_train_join_mall
 
 def train_test_split(X, y, test_size=0.2):
     train_size = int((1 - test_size) * X.shape[0])
-    return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
+    if isinstance(X, np.ndarray):
+        return X[:train_size], X[train_size:], y[:train_size], y[train_size:]
+    else:
+        return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
 
 
 def safe_dump_model(model, save_path, compress=3):
@@ -137,7 +141,7 @@ class ModelBase(object):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400,
+            'random forest': RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400, bootstrap=False,
                                                     random_state=self._random_state, class_weight='balanced'),
         }
 
