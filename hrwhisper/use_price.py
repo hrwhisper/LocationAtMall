@@ -14,7 +14,7 @@ class PriceToVec(XXToVec):
     """
         using the price feature which has been predicted by 'predict_price.py'
     """
-    TRAIN_PRICE = pd.read_csv('./feature_save/predicted_price.csv', dtype={'row_id': str})
+    TRAIN_PRICE = pd.read_csv('./feature_save/predicted_price2.csv', dtype={'row_id': str})
 
     def __init__(self):
         super().__init__('./feature_save/price_features_{}_{}.pkl')

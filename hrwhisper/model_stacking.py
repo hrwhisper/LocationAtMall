@@ -37,11 +37,13 @@ class ModelStacking(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'random forest': RandomForestClassifier(n_estimators=400,
+            'random forest': RandomForestClassifier(n_jobs=self.n_jobs,
+                                                    n_estimators=400,
                                                     bootstrap=False,
+                                                    min_samples_split=4,
+                                                    min_samples_leaf=1,
                                                     random_state=self._random_state,
-                                                    class_weight='balanced',
-                                                    n_jobs=self.n_jobs),
+                                                    class_weight='balanced'),
             'binary random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
                                                                                bootstrap=False,
                                                                                random_state=self._random_state,

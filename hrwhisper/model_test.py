@@ -3,13 +3,12 @@
 # @Author  : hrwhisper
 import os
 
+from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from xgboost import XGBClassifier
 
 from common_helper import ModelBase
-from use_category import CategoryToVec
-from use_category2 import CategoryToVec2
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
 from use_price import PriceToVec
@@ -29,11 +28,19 @@ class ModelTest(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            # 'random forest': RandomForestClassifier(n_estimators=400,
+            # 'light gbm': LGBMClassifier(n_jobs=self.n_jobs,
+            #                             n_estimators=500,
+            #                             learning_rate=0.05,
+            #                             num_leaves=127,
+            #                             max_depth=8,
+            #                             ),
+            # 'random forest': RandomForestClassifier(n_jobs=self.n_jobs,
+            #                                         n_estimators=400,
             #                                         bootstrap=False,
+            #                                         min_samples_split=4,
+            #                                         min_samples_leaf=1,
             #                                         random_state=self._random_state,
-            #                                         class_weight='balanced',
-            #                                         n_jobs=self.n_jobs),
+            #                                         class_weight='balanced'),
             'binary random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
                                                                                bootstrap=False,
                                                                                random_state=self._random_state,

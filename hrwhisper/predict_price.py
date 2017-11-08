@@ -31,7 +31,7 @@ class CategoryPredicted(ModelBase):
         :return: dict. {name:classifier}
         """
         return {
-            'RandomForestRegressor ': RandomForestRegressor(n_estimators=100, n_jobs=os.cpu_count() // 2)
+            'RandomForestRegressor ': RandomForestRegressor(n_estimators=100, n_jobs=self.n_jobs)
         }
 
     def train_test(self, vec_func, target_column='price', fold=5):
@@ -127,7 +127,7 @@ class CategoryPredicted(ModelBase):
 
 def train_test():
     task = CategoryPredicted()
-    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()]
+    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec()]
     task.train_test(func, 'price')
     # task.train_and_on_test_data(func, 'price')
 

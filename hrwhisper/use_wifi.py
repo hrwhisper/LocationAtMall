@@ -22,6 +22,8 @@ class WifiToVec(XXToVec):
         super().__init__('./feature_save/wifi_features_{}_{}.pkl')
         self.min_strong = -120
         self._WIFI_BSSID = None
+        #self.hotspot = many_mall_has_same_bssid()
+
 
     def _fit_transform(self, train_data, mall_id):
         wifi_and_date = collections.defaultdict(set)
@@ -46,13 +48,15 @@ class WifiToVec(XXToVec):
                     row[_id] = [_strong, _connect == 'true']
                     wifi_bssid.add(_id)
                 else:
-                    for i in range(1, cur_wifi_len):
-                        _t_id = _id + '_' + str(i)
-                        if _t_id in row:
-                            row[_t_id] = [_strong, _connect == 'true']
-                            wifi_bssid.add(_t_id)
-                            break
-
+                    _s, _c = row[_id]
+                    if not _c:
+                        row[_id] = [max(_s , _strong), _c or _connect == 'true']
+                    # for i in range(1, cur_wifi_len):
+                    #     _t_id = _id + '_' + str(i)
+                    #     if _t_id not in row:
+                    #         row[_t_id] = [_strong, _connect == 'true']
+                    #         wifi_bssid.add(_t_id)
+                    #         break
             wifi_rows.append(row)
 
         self._WIFI_BSSID = wifi_bssid = {_id: i for i, _id in enumerate(sorted(wifi_bssid))}
@@ -76,7 +80,7 @@ class WifiToVec(XXToVec):
         to_add = []
         for i, wifi_infos in enumerate(test_data['wifi_infos']):
             row = {}
-            cur_wifi_len = len(wifi_infos.split(';'))
+            # cur_wifi_len = len(wifi_infos.split(';'))
             for wifi in wifi_infos.split(';'):
                 _id, _strong, _connect = wifi.split('|')
                 if _id not in wifi_bssid:
@@ -86,11 +90,16 @@ class WifiToVec(XXToVec):
                 if _id not in row:
                     row[_id] = [_strong, _connect == 'true']
                 else:
-                    for i in range(1, cur_wifi_len):
-                        _t_id = _id + '_' + str(i)
-                        if _t_id not in row and _t_id in wifi_bssid:
-                            row[_t_id] = [_strong, _connect == 'true']
-                            break
+                    _s, _c = row[_id]
+                    if not _c:
+                        row[_id] = [max(_s , _strong) , _c or _connect == 'true']
+                    # for i in range(1, cur_wifi_len):
+                    #     _t_id = _id + '_' + str(i)
+                    #     if _t_id not in row and _t_id in wifi_bssid:
+                    #         print(_t_id)
+                    #         row[_t_id] = [_strong, _connect == 'true']
+                    #         break
+
             if len(row) == 0:
                 to_add.append(i)
             wifi_rows.append(row)
@@ -125,7 +134,7 @@ class WifiToVec(XXToVec):
 def train_test():
     task = ModelBase()
     task.train_test([WifiToVec()])
-    # task.train_and_on_test_data([WifiToVec2()])
+    # task.train_and_on_test_data([WifiToVec()])
 
 
 if __name__ == '__main__':
