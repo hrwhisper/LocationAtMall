@@ -18,33 +18,12 @@ class WifiStrongToVec(XXToVec):
         super().__init__('./feature_save/wifi_strong_features_{}_{}.pkl')
         self.min_strong = -300
 
-    def _fit_transform(self, train_data, mall_id):
-        train_data = train_data.loc[train_data['mall_id'] == mall_id]
-        ret_list = []
-        for wifi_infos in train_data['wifi_infos']:
-            list_id = []
-            list_strong = []
-            list_connect = []
-            if wifi_infos:
-                for wifi in wifi_infos.split(';'):
-                    _id, _strong, _connect = wifi.split('|')
-                    list_id.append(_id)
-                    list_strong.append(int(_strong))
-                    list_connect.append(_connect)
-                max_strong_index = list_strong.index(max(list_strong))
-                temp_id = list_id[max_strong_index]
-                ret_list.append(int(temp_id.replace('b_', '')))
-            else:
-                ret_list.append(list(Counter(ret_list).keys())[0])
-        train_data['wifi_strong'] = ret_list
-        train_data = pd.concat([train_data['wifi_strong'], train_data['longitude'], train_data['latitude']], axis=1)
-        wifi_features = csr_matrix(train_data)  # TODO normalize
-        return wifi_features
+    def _fit_transform(self, data, mall_id):
+        return self._transform(data, mall_id)
 
-    def _transform(self, test_data, mall_id):
-        test_data = test_data.loc[test_data['mall_id'] == mall_id]
+    def _transform(self, data, mall_id):
         ret_list = []
-        for wifi_infos in test_data['wifi_infos']:
+        for wifi_infos in data['wifi_infos']:
             list_id = []
             list_strong = []
             list_connect = []
@@ -59,9 +38,9 @@ class WifiStrongToVec(XXToVec):
                 ret_list.append(int(temp_id.replace('b_', '')))
             else:
                 ret_list.append(list(Counter(ret_list).keys())[0])
-        test_data['wifi_strong'] = ret_list
-        test_data = pd.concat([test_data['wifi_strong'], test_data['longitude'], test_data['latitude']], axis=1)
-        wifi_features = csr_matrix(test_data)  # TODO normalize
+        data = data.assign(wifi_strong=pd.Series(ret_list).values)
+        data = pd.concat([data['wifi_strong'], data['longitude'], data['latitude']], axis=1)
+        wifi_features = csr_matrix(data)  # TODO normalize
         return wifi_features
 
 

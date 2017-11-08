@@ -15,15 +15,16 @@ class CategoryToVec2(XXToVec):
         using the category feature which has been predicted by 'predict_category.py'
     """
     CATEGORY_ID_LEN = len(read_mall_data()['category_id'].unique())
-    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_category_pro.csv',
-                                 dtype={'row_id': str}).replace([-np.inf], -999)
+    TRAIN_CATEGORY = pd.read_csv('./feature_save/predicted_category_pro.csv', dtype={'row_id': str})
 
     def __init__(self):
         super().__init__('./feature_save/time_features_{}_{}.pkl')
+        self.k = 2
 
     def _do_transform(self, data):
         d = data.join(self.TRAIN_CATEGORY.set_index('row_id'), on='row_id', rsuffix='_train')
         features = d[[str(i) for i in range(self.CATEGORY_ID_LEN)]].values
+        features = np.argpartition(features, self.k)[:, -self.k:]
         return csr_matrix(features)
 
     def _fit_transform(self, train_data, mall_id):

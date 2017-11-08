@@ -62,7 +62,7 @@ class XXToVec(abc.ABC):
         :return:
         """
         if renew:
-            train_data = train_data.loc[train_data['mall_id'] == mall_id]
+            # train_data = train_data.loc[train_data['mall_id'] == mall_id]
             features = self._fit_transform(train_data, mall_id)
             if should_save:
                 safe_dump_model(features, self.FEATURE_SAVE_PATH.format('train', mall_id))
@@ -80,7 +80,7 @@ class XXToVec(abc.ABC):
         :return:
         """
         if renew:
-            test_data = test_data.loc[test_data['mall_id'] == mall_id]
+            # test_data = test_data.loc[test_data['mall_id'] == mall_id]
             features = self._transform(test_data, mall_id)
             if should_save:
                 safe_dump_model(features, self.FEATURE_SAVE_PATH.format('test', mall_id))
@@ -107,10 +107,12 @@ class DataVectorHelper(object):
 class DataVector(object):
     @staticmethod
     def data_to_vec(mall_id, vec_func, data, label=None, is_train=True):
+        cur_index = data['mall_id'] == mall_id
+        y = label[cur_index] if label is not None else None
+        data = data.loc[cur_index]
         funcs = [func.fit_transform if is_train else func.transform for func in vec_func]
         vectors = DataVectorHelper(funcs, data, mall_id).start_to_vec()
         X = sparse.hstack(vectors)
-        y = label[data['mall_id'] == mall_id] if label is not None else None
         return X, y
 
     @staticmethod
