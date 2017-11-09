@@ -97,20 +97,6 @@ class XXToVec(abc.ABC):
         return features
 
 
-class DataVectorHelper(object):
-    def __init__(self, funcs, data, mall_id):
-        self.funcs = funcs
-        self._data = data
-        self._mall_id = mall_id
-
-    def _helper(self, func):
-        return func(self._data, self._mall_id)
-
-    def start_to_vec(self):
-        vectors = [func(self._data, self._mall_id) for func in self.funcs]
-        return vectors
-
-
 class DataVector(object):
     @staticmethod
     def data_to_vec(mall_id, vec_func, data, label=None, is_train=True):
@@ -118,7 +104,7 @@ class DataVector(object):
         y = label[cur_index] if label is not None else None
         data = data.loc[cur_index]
         funcs = [func.fit_transform if is_train else func.transform for func in vec_func]
-        vectors = DataVectorHelper(funcs, data, mall_id).start_to_vec()
+        vectors = [func(data, mall_id) for func in funcs]
         X = sparse.hstack(vectors)
         return X, y
 
@@ -189,13 +175,16 @@ class ModelReport(Process):
 
     def run(self):
         ans = {}
+        cnt = total_score = 0
         while True:
             t = self.report_queue.get()
             if t is None: break
             mall_id, ri, y_test, row_id = t
             predicted = self.result_queue.get()
+            cnt += 1
             if y_test is not None:
                 score = accuracy_score(y_test, predicted)
+                total_score += score
                 print("{} {} {}".format(ri, mall_id, score))
             else:
                 print("{} {}".format(ri, mall_id))
@@ -203,6 +192,8 @@ class ModelReport(Process):
             for row_id, label in zip(row_id, predicted):
                 ans[row_id] = label
             del predicted
+
+        print('mean score', total_score // cnt)
         self.ans_queue.put(ans)
 
 
