@@ -3,6 +3,7 @@
 # @Author  : hrwhisper
 import os
 
+import time
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsRestClassifier
@@ -20,8 +21,8 @@ from use_wifi_kstrong import WifiKStrongToVec
 
 
 class ModelTest(ModelBase):
-    def __init__(self, save_model):
-        super().__init__(save_model=save_model)
+    def __init__(self, save_model, use_multiprocess):
+        super().__init__(save_model=save_model, use_multiprocess=use_multiprocess)
 
     def _get_classifiers(self):
         """
@@ -34,18 +35,18 @@ class ModelTest(ModelBase):
             #                             num_leaves=127,
             #                             max_depth=8,
             #                             ),
-            # 'random forest': RandomForestClassifier(n_jobs=self.n_jobs,
-            #                                         n_estimators=400,
-            #                                         bootstrap=False,
-            #                                         min_samples_split=4,
-            #                                         min_samples_leaf=1,
-            #                                         random_state=self._random_state,
-            #                                         class_weight='balanced'),
-            'binary random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
-                                                                               bootstrap=False,
-                                                                               random_state=self._random_state,
-                                                                               class_weight='balanced'),
-                                                        n_jobs=self.n_jobs),
+            'random forest': RandomForestClassifier(n_jobs=self.n_jobs,
+                                                    n_estimators=400,
+                                                    bootstrap=False,
+                                                    min_samples_split=4,
+                                                    min_samples_leaf=1,
+                                                    random_state=self._random_state,
+                                                    class_weight='balanced'),
+            # 'binary random forest': OneVsRestClassifier(RandomForestClassifier(n_estimators=400,
+            #                                                                    bootstrap=False,
+            #                                                                    random_state=self._random_state,
+            #                                                                    class_weight='balanced'),
+            #                                             n_jobs=self.n_jobs),
             # 'xgb': XGBClassifier(colsample_bytree=0.7,
             #                      learning_rate=0.025,
             #                      max_depth=6,
@@ -75,7 +76,7 @@ class ModelTest(ModelBase):
 
 
 def train_test():
-    task = ModelTest(save_model=False)
+    task = ModelTest(save_model=False, use_multiprocess=False)
     task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
     task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
 

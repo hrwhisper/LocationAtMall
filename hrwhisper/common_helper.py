@@ -3,10 +3,13 @@
 # @Author  : hrwhisper
 import abc
 import os
+import sys
 import time
 
 import numpy as np
+from multiprocessing import Process, Queue
 from scipy import sparse
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
@@ -35,9 +38,14 @@ def safe_dump_model(model, save_path, compress=3):
 def get_recommend_cpu_count():
     """
         windows: 只跑一半
-        linux: 为我的测试机或者服务器，满载
+        linux: 为我的测试机或者服务器
     """
-    return os.cpu_count() // 2 if os.name == 'nt' else os.cpu_count()
+    t = os.cpu_count()
+    if os.name == 'nt':  return t // 2 - 1
+    if t >= 32:
+        return t // 8 * 5 - 1
+    else:
+        return t - 2
 
 
 class XXToVec(abc.ABC):
@@ -99,7 +107,6 @@ class DataVectorHelper(object):
         return func(self._data, self._mall_id)
 
     def start_to_vec(self):
-        print('data to vector....')
         vectors = [func(self._data, self._mall_id) for func in self.funcs]
         return vectors
 
@@ -122,16 +129,116 @@ class DataVector(object):
         return X_train, y_train, X_test, y_test
 
 
+class ModelDataVector(object):
+    def __init__(self, vec_func, train_data, train_label, test_data, test_label,
+                 train_queue: Queue, predict_queue: Queue, report_queue: Queue):
+        super().__init__()
+        self.vec_func = vec_func
+        self.train_data = train_data
+        self.train_label = train_label
+        self.test_data = test_data
+        self.test_label = test_label
+        self.train_queue = train_queue
+        self.predict_queue = predict_queue
+        self.report_queue = report_queue
+
+    def run(self):
+        for ri, mall_id in enumerate(self.train_data['mall_id'].unique()):
+            print('{} data to vector'.format(mall_id))
+
+            X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, self.vec_func, self.train_data,
+                                                                                self.train_label, self.test_data,
+                                                                                self.test_label)
+            self.train_queue.put((mall_id, X_train, y_train))
+            self.predict_queue.put((mall_id, X_test))
+
+            row_id = self.test_data[self.test_data['mall_id'] == mall_id]['row_id']
+            self.report_queue.put((mall_id, ri, y_test, row_id))
+
+        # end
+        self.train_queue.put(None)
+        self.predict_queue.put(None)
+        self.report_queue.put(None)
+
+
+class ModelTrain(Process):
+    def __init__(self, classifier, train_queue, clf_queue):
+        super().__init__()
+        self.classifier = classifier
+        self.train_queue = train_queue
+        self.clf_queue = clf_queue
+
+    def run(self):
+        while True:
+            t = self.train_queue.get()
+            if t is None: break
+            mall_id, X_train, y_train = t
+            print('{} fit'.format(mall_id))
+            clf = clone(self.classifier)
+            clf.fit(X_train, y_train)
+            print('clf_size: {}'.format(sys.getsizeof(clf)))
+            self.clf_queue.put(clf)
+            del X_train
+            del y_train
+
+
+class ModelPredict(Process):
+    def __init__(self, predict_queue, clf_queue, result_queue):
+        super().__init__()
+        self.predict_queue = predict_queue
+        self.clf_queue = clf_queue
+        self.result_queue = result_queue
+
+    def run(self):
+        while True:
+            t = self.predict_queue.get()
+            if t is None: break
+            mall_id, X_test = t
+            clf = self.clf_queue.get()
+            print('{} predict'.format(mall_id))
+            predicted = clf.predict(X_test)
+            self.result_queue.put(predicted)
+            del clf
+
+
+class ModelReport(Process):
+    def __init__(self, report_queue, result_queue, ans_queue):
+        super().__init__()
+        self.report_queue = report_queue
+        self.result_queue = result_queue
+        self.ans_queue = ans_queue
+
+    def run(self):
+        ans = {}
+        while True:
+            t = self.report_queue.get()
+            if t is None: break
+            mall_id, ri, y_test, row_id = t
+            predicted = self.result_queue.get()
+            if y_test is not None:
+                score = accuracy_score(y_test, predicted)
+                print("{} {} {}".format(ri, mall_id, score))
+            else:
+                print("{} {}".format(ri, mall_id))
+
+            for row_id, label in zip(row_id, predicted):
+                ans[row_id] = label
+            del predicted
+        self.ans_queue.put(ans)
+
+
 class ModelBase(object):
     """
         多分类
         划分训练集依据： 总体按时间排序后20%
     """
 
-    def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None, save_model=False, save_model_base_path=None):
+    def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None, use_multiprocess=True, save_model=False,
+                 save_model_base_path=None):
         self._test_ratio = test_ratio
         self._random_state = random_state
         self.n_jobs = get_recommend_cpu_count() if n_jobs is None else n_jobs
+        self.use_multiprocess = use_multiprocess
         self.SAVE_MODEL = save_model
         self.SAVE_MODEL_BASE_PATH = save_model_base_path if save_model_base_path is not None else './model_save/'
 
@@ -155,16 +262,34 @@ class ModelBase(object):
         predicted = cls.predict(X_test)
         return predicted
 
-    def _trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data, test_label=None):
-        """
+    def _multi_process_trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data,
+                                                            test_label=None):
+        maxsize = 2
+        train_queue, predict_queue = Queue(maxsize), Queue(maxsize)
+        report_queue = Queue(maxsize)
+        clf_queue, result_queue = Queue(maxsize), Queue(maxsize)
+        ans_queue = Queue()
 
-        :param vec_func:
-        :param train_data:
-        :param train_label
-        :param test_data:
-        :param test_label:
-        :return:
-        """
+        model_data_vector = ModelDataVector(vec_func, train_data, train_label, test_data, test_label, train_queue,
+                                            predict_queue, report_queue)
+
+        model_train = ModelTrain(list(self._get_classifiers().values())[0], train_queue, clf_queue)
+        model_predict = ModelPredict(predict_queue, clf_queue, result_queue)
+        model_report = ModelReport(report_queue, result_queue, ans_queue)
+
+        model_train.start()
+        model_predict.start()
+        model_report.start()
+        model_data_vector.run()
+
+        # model_train.join()
+        # model_predict.join()
+        # model_report.join()
+        ans = ans_queue.get()
+        return ans
+
+    def _single_trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data,
+                                                     test_label=None):
         ans = {}
         clf_report = {}
         is_train = test_label is not None
@@ -193,7 +318,23 @@ class ModelBase(object):
             classifiers = self._get_classifiers()
             for name, score in clf_report.items():
                 print("{} Mean: {}".format(classifiers[name], score / cnt))
-        return ans
+
+    def _trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data, test_label=None):
+        """
+
+        :param vec_func:
+        :param train_data:
+        :param train_label
+        :param test_data:
+        :param test_label:
+        :return:
+        """
+        if self.use_multiprocess:
+            self._multi_process_trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data,
+                                                                     test_label)
+        else:
+            return self._single_trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data,
+                                                                     test_label)
 
     def train_test(self, vec_func, target_column='shop_id'):
         """

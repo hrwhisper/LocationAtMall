@@ -44,6 +44,7 @@ class WifiToVec(XXToVec):
                 if len(wifi_and_date[_id]) < 2:
                     continue
                 _strong = int(_strong) - self.min_strong
+                if _strong < 30: continue
                 if _id not in row:
                     row[_id] = [_strong, _connect == 'true']
                     wifi_bssid.add(_id)
@@ -87,6 +88,7 @@ class WifiToVec(XXToVec):
                     not_in.add(_id)
                     continue
                 _strong = int(_strong) - self.min_strong
+                if _strong < 30: continue
                 if _id not in row:
                     row[_id] = [_strong, _connect == 'true']
                 else:

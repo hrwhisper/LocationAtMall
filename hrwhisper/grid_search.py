@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Date    : 2017/11/3
 # @Author  : hrwhisper
+from lightgbm import LGBMClassifier
 from sklearn import preprocessing
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
@@ -53,18 +54,46 @@ def binary_xgboost():
                   'estimator__random_state': [1080],
                   }
 
-    clf = GridSearchCV(OneVsRestClassifier(XGBClassifier()), parameters, n_jobs=get_recommend_cpu_count() // 2,
+    clf = GridSearchCV(XGBClassifier(), parameters, n_jobs=get_recommend_cpu_count(),
+                       cv=KFold(n_splits=5, random_state=42),
+                       verbose=1, refit=True)
+    return clf
+
+    # 'light gbm': LGBMClassifier(n_jobs=self.n_jobs,
+    #                             n_estimators=500,
+    #                             learning_rate=0.05,
+    #                             num_leaves=127,
+    #                             max_depth=8,
+    #                             ),
+
+
+def lightbgm():
+    parameters = {'n_jobs': [2],
+                  'n_estimators': [500, 1000],
+                  'num_leaves': [60, 70, 80, 90, 110, 120, 140],
+                  'learning_rate': [0.01, 0.025, 0.05, 0.1],  # 0.015,
+                  'max_depth': [5, 7, 9, 12, 15],  # 3, 17
+                  'min_child_weight': [1, 3, 5],  # 7
+                  # 'subsample': [0.6, 0.7, 0.8, 1.0],  # 0.9,
+                  # 'colsample_bytree': [0.6, 0.7, 0.8, 1.0],  # 0.9,
+                  # 'reg_alpha': [0, 0.1, ],  # 0.5
+                  # 'reg_lambda': [0.01, 0.05, 1],  # 0.01,
+                  'silent': [1],
+                  'random_state': [1080],
+                  }
+
+    clf = GridSearchCV(LGBMClassifier(), parameters, n_jobs=get_recommend_cpu_count(),
                        cv=KFold(n_splits=3, random_state=42),
                        verbose=1, refit=True)
     return clf
 
 
-def grid_search_xgboost(clf):
+def grid_search(clf):
     train_data = read_train_join_mall()
     train_data = train_data.sort_values(by='time_stamp')
     train_label = preprocessing.LabelEncoder().fit_transform(train_data['shop_id'])
 
-    for mall_id in train_data['mall_id'].unique():
+    for mall_id in ['m_7374']:  # train_data['mall_id'].unique():
         X_train, y_train = DataVector.data_to_vec(mall_id,
                                                   [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(),
                                                    PriceToVec()],
@@ -86,7 +115,7 @@ def grid_search_xgboost(clf):
 
 
 if __name__ == '__main__':
-    grid_search_xgboost(binary_xgboost())
+    grid_search(lightbgm())
 
     # train_data = read_train_join_mall()
     # train_data = train_data.loc[train_data['mall_id'] == 'm_6803']
