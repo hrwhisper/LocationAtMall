@@ -193,7 +193,7 @@ class ModelReport(Process):
                 ans[row_id] = label
             del predicted
 
-        print('mean score', total_score // cnt)
+        print('mean score', total_score / cnt)
         self.ans_queue.put(ans)
 
 
