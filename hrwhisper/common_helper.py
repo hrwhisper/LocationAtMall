@@ -3,9 +3,9 @@
 # @Author  : hrwhisper
 import abc
 import os
-import sys
 import time
 
+import pandas as pd
 import numpy as np
 from multiprocessing import Process, Queue
 from scipy import sparse
@@ -35,13 +35,20 @@ def safe_dump_model(model, save_path, compress=3):
     print('save model done.')
 
 
+def safe_save_csv_result(res, save_path):
+    dir_name = os.path.dirname(save_path)
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+    res.to_csv(save_path)
+
+
 def get_recommend_cpu_count():
     """
         windows: 只跑一半
         linux: 为我的测试机或者服务器
     """
     t = os.cpu_count()
-    if os.name == 'nt':  return t // 2 - 1
+    if os.name == 'nt':  return t // 2
     if t >= 32:
         return t // 8 * 5 - 1
     else:
@@ -204,13 +211,15 @@ class ModelBase(object):
     """
 
     def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None, use_multiprocess=True, save_model=False,
-                 save_model_base_path=None):
+                 save_result_proba=False, save_model_base_path='./model_save/', result_save_base_path='./result_save/'):
         self._test_ratio = test_ratio
         self._random_state = random_state
         self.n_jobs = get_recommend_cpu_count() if n_jobs is None else n_jobs
         self.use_multiprocess = use_multiprocess
         self.SAVE_MODEL = save_model
-        self.SAVE_MODEL_BASE_PATH = save_model_base_path if save_model_base_path is not None else './model_save/'
+        self.SAVE_RESULT_PROBA = save_result_proba
+        self.SAVE_MODEL_BASE_PATH = save_model_base_path
+        self.RESULT_SAVE_BASE_PATH = result_save_base_path
 
     def get_name(self):
         return self.__class__.__name__
@@ -268,10 +277,21 @@ class ModelBase(object):
             for name, clf in classifiers.items():
                 predicted = self.trained_and_predict_location(clf, X_train, y_train, X_test, y_test)
                 if self.SAVE_MODEL:
-                    safe_dump_model(clf, '{}/{}/{}_{}'.format(self.SAVE_MODEL_BASE_PATH, name,
-                                                              'train' if is_train else 'test', mall_id))
-                for row_id, label in zip(test_data[test_data['mall_id'] == mall_id]['row_id'], predicted):
+                    safe_dump_model(clf, '{}/{}/{}_{}.pkl'.format(self.SAVE_MODEL_BASE_PATH, name,
+                                                                  'train' if is_train else 'test', mall_id))
+
+                index = test_data['mall_id'] == mall_id
+                for row_id, label in zip(test_data[index]['row_id'], predicted):
                     ans[row_id] = label
+
+                if self.SAVE_RESULT_PROBA:
+                    predicted_pro = clf.predict_proba(X_test)
+                    row_ids = pd.DataFrame(test_data[index]['row_id'].values, columns=['row_id'])
+                    predicted_pro = pd.DataFrame(predicted_pro, columns=clf.classes_)
+
+                    safe_save_csv_result(pd.concat([row_ids, predicted_pro], axis=1).set_index('row_id'),
+                                         '{}/{}/{}_{}.csv'.format(self.RESULT_SAVE_BASE_PATH, name,
+                                                                  'train' if is_train else 'test', mall_id))
 
                 if is_train:
                     score = accuracy_score(y_test, predicted)
