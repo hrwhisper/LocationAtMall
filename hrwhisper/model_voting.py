@@ -55,9 +55,16 @@ class ModelVoting(ModelBase):
 
 
 def train_test():
-    task = ModelVoting(['random forest', 'binary random forest'])
+    """
+    ['random forest', 'binary random forest'] [1, 1]  Mean: 0.9192280256032719
+    ['random forest', 'binary random forest','binary xgb'] [10, 10, 5] Mean: 0.920154410602307
+    """
+    models = ['random forest', 'binary random forest', 'binary xgb']
+    weights = [10, 10, 5]
+    print(models, weights)
+    task = ModelVoting(models, weights=weights)
     task.train_test(vec_func=None)
-    task.train_and_on_test_data(vec_func=None)
+    # task.train_and_on_test_data(vec_func=None)
 
 
 if __name__ == '__main__':
