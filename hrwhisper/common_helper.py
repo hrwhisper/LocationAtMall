@@ -13,7 +13,6 @@ from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
-from sklearn.multiclass import OneVsRestClassifier
 
 from parse_data import read_test_data, read_train_join_mall
 
@@ -52,7 +51,7 @@ def get_recommend_cpu_count():
     if t >= 32:
         return t // 8 * 5 - 1
     else:
-        return t - 2
+        return t - 1
 
 
 class XXToVec(abc.ABC):
@@ -210,7 +209,7 @@ class ModelBase(object):
         划分训练集依据： 总体按时间排序后20%
     """
 
-    def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None, use_multiprocess=True, save_model=False,
+    def __init__(self, test_ratio=0.2, random_state=42, n_jobs=None, use_multiprocess=False, save_model=False,
                  save_result_proba=False, save_model_base_path='./model_save/', result_save_base_path='./result_save/'):
         self._test_ratio = test_ratio
         self._random_state = random_state

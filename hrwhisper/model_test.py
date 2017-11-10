@@ -21,8 +21,8 @@ from use_wifi_kstrong import WifiKStrongToVec
 
 
 class ModelTest(ModelBase):
-    def __init__(self, save_model, use_multiprocess):
-        super().__init__(save_model=save_model, use_multiprocess=use_multiprocess)
+    def __init__(self, save_model, use_multiprocess, save_result_proba):
+        super().__init__(save_model=save_model, use_multiprocess=use_multiprocess, save_result_proba=save_result_proba)
 
     def _get_classifiers(self):
         """
@@ -76,7 +76,7 @@ class ModelTest(ModelBase):
 
 
 def train_test():
-    task = ModelTest(save_model=False, use_multiprocess=False)
+    task = ModelTest(save_model=False, use_multiprocess=False, save_result_proba=True)
     task.train_test([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
     task.train_and_on_test_data([LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()])
 
