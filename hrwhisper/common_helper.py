@@ -25,6 +25,11 @@ def train_test_split(X, y, test_size=0.2):
         return X.iloc[:train_size], X.iloc[train_size:], y.iloc[:train_size], y.iloc[train_size:]
 
 
+def train_test_split_by_date(X, y):
+    mask = X['time_stamp'] >= '2017-08-18'
+    return X.loc[mask], X.loc[~mask], y.loc[mask], y.loc[~mask]
+
+
 def safe_dump_model(model, save_path, compress=3):
     print('save model......')
     dir_name = os.path.dirname(save_path)

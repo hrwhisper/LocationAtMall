@@ -5,13 +5,17 @@
     classifier voting. the idea is the same as sklearn's VotingClassifier.
     But it load the probability result file.
 
-    ['random forest 0.9169', 'binary random forest 0.9169'] [1, 1]
+    ['random forest 0.9169', 'binary random forest 0.9174'] [1, 1]
     Mean: 0.9192280256032719
     online:0.9214
 
-    ['random forest 0.9169', 'binary random forest 0.9169','binary xgb 0.9142'] [10, 10, 5]
+    ['random forest 0.9169', 'binary random forest 0.9174','binary xgb 0.9142'] [10, 10, 5]
     Mean: 0.920154410602307
     online:0.9234
+
+    ['random forest 0.91828', 'binary random forest 0.91813', 'binary xgb 0.9147'] weights = [10, 9, 6]
+    Mean: 0.920985617387946
+    online:0.9234 比上面的略高
 """
 
 import pandas as pd
@@ -63,8 +67,8 @@ class ModelVoting(ModelBase):
 
 
 def train_test():
-    models = ['random forest 0.9169', 'binary random forest 0.9169', 'binary xgb 0.9142']
-    weights = [10, 10, 5]
+    models = ['random forest 0.91828', 'binary random forest 0.91813', 'binary xgb 0.9147']
+    weights = [10, 9, 6]  # Mean: 0.920985617387946 [10, 9, 6]
     print(models, weights)
     task = ModelVoting(models, weights=weights)
     task.train_test(vec_func=None)
