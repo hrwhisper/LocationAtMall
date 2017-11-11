@@ -4,6 +4,14 @@
 """
     classifier voting. the idea is the same as sklearn's VotingClassifier.
     But it load the probability result file.
+
+    ['random forest 0.9169', 'binary random forest 0.9169'] [1, 1]
+    Mean: 0.9192280256032719
+    online:0.9214
+
+    ['random forest 0.9169', 'binary random forest 0.9169','binary xgb 0.9142'] [10, 10, 5]
+    Mean: 0.920154410602307
+    online:0.9234
 """
 
 import pandas as pd
@@ -55,11 +63,7 @@ class ModelVoting(ModelBase):
 
 
 def train_test():
-    """
-    ['random forest', 'binary random forest'] [1, 1]  Mean: 0.9192280256032719
-    ['random forest', 'binary random forest','binary xgb'] [10, 10, 5] Mean: 0.920154410602307
-    """
-    models = ['random forest', 'binary random forest', 'binary xgb']
+    models = ['random forest 0.9169', 'binary random forest 0.9169', 'binary xgb 0.9142']
     weights = [10, 10, 5]
     print(models, weights)
     task = ModelVoting(models, weights=weights)

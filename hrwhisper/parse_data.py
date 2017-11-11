@@ -27,7 +27,7 @@ def read_train_join_mall():
 
 def add_row_id_for_train_data():
     train_data = pd.read_csv('../data/train.csv')
-    df1 = train_data.assign(row_id=pd.Series(['_{}'.format(i) for i in range(train_data.shape[0])]))
+    df1 = train_data.assign(row_id=pd.Series(['_{}'.format(i) for i in range(train_data.shape[0])])).set_index('row_id')
     df1.to_csv('../data/train_row_id.csv')
 
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # print(res.loc[res['mall_id'] == 'm_1409'].head())
     # # print(res.info())
     add_row_id_for_train_data()
-    print('add')
-    t = read_train_data()
-    print(t[[True, True] + [False] * (t.shape[0] - 2)])
+    # print('add')
+    # t = read_train_data()
+    # print(t[[True, True] + [False] * (t.shape[0] - 2)])
     # print(t.head())
