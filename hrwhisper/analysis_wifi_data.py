@@ -11,7 +11,7 @@ from datetime import datetime
 from sklearn.externals import joblib
 
 from parse_data import read_train_join_mall, read_test_data
-from visulization_wifi import draw_wifi
+from visulization_wifi_data import draw_wifi
 
 
 def many_mall_has_same_bssid():

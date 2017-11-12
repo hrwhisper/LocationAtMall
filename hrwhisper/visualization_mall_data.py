@@ -6,7 +6,10 @@
 """
 import collections
 
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import pandas as pd
+
 from parse_data import read_train_join_mall, read_mall_data
 from use_location import center_latitudes_and_longitudes, get_distance_by_latitude_and_longitude
 
@@ -69,9 +72,40 @@ def shop_mall_visualization(mall_id='m_4572'):
     show_plt()
 
 
+def mall_shop_day_sales_volume(mall_id='m_1621'):
+    _train_data = read_train_join_mall()
+    train_data = _train_data.loc[_train_data['mall_id'] == mall_id]
+    train_data = train_data.assign(time_stamp=pd.to_datetime(train_data['time_stamp']))
+    train_data['time_stamp'] = train_data['time_stamp'].dt.day
+
+    total_count = [collections.Counter() for _ in range(31)]
+    for shop_id, day in zip(train_data['shop_id'], train_data['time_stamp']):
+        total_count[day - 1][shop_id] += 1
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    z = 0
+    shop_dis = 60
+
+    for shop_id in ['s_389866', 's_432426', 's_459836', 's_634174', 's_1215854',
+                    's_1287028', 's_2110248', 's_2670603', 's_2862961', 's_2922711',
+                    's_3418707', 's_3479448', 's_3558937', 's_3658245', 's_3711363',
+                    's_3716008', 's_3790469', 's_4001714', 's_4021610', 's_4050122']:
+        if total_count[-1][shop_id] > 0: continue # 只画最后一天没有卖东西的，减少数量
+        xs = list(range(31))
+        ys = [total_count[i][shop_id] for i in xs]
+        ax.bar(xs, ys, z, zdir='y', alpha=0.8)
+        z += shop_dis
+
+    ax.set_xlabel('days')
+    ax.set_ylabel('shops')
+    ax.set_zlabel('sales volume')
+
+    show_plt()
+
+
 if __name__ == '__main__':
-    only_mall_visualization()
+    # only_mall_visualization('m_968')
     # shop_mall_visualization('m_1621')
-    # (Lat_A, Lng_A) = (32.060255, 118.796877)
-    # (Lat_B, Lng_B) = (39.904211, 116.407395)
-    # print(gpxpy.geo.haversine_distance(Lat_A, Lng_A, Lat_B, Lng_B))
+    mall_shop_day_sales_volume('m_968')
