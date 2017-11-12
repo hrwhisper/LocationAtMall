@@ -4,6 +4,8 @@
 """
 画图
 """
+import collections
+
 import matplotlib.pyplot as plt
 from parse_data import read_train_join_mall, read_mall_data
 from use_location import center_latitudes_and_longitudes, get_distance_by_latitude_and_longitude
@@ -29,6 +31,12 @@ def only_mall_visualization(mall_id=None):
     else:
         id2color = {mall_id: i for i, mall_id in enumerate(train_data['mall_id'].unique())}
         colors = [id2color[i] for i in train_data['mall_id']]
+
+    counter = collections.Counter(zip(x, y))
+    for (a, b), cnt in counter.items():
+        if cnt > 1:
+            plt.text(a, b, cnt)
+
     plt.scatter(x, y, s=100, c=colors, alpha=0.5)
     show_plt()
 
@@ -62,7 +70,7 @@ def shop_mall_visualization(mall_id='m_4572'):
 
 
 if __name__ == '__main__':
-    only_mall_visualization('m_1621')
+    only_mall_visualization()
     # shop_mall_visualization('m_1621')
     # (Lat_A, Lng_A) = (32.060255, 118.796877)
     # (Lat_B, Lng_B) = (39.904211, 116.407395)

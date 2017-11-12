@@ -67,12 +67,12 @@ def binary_xgboost():
     #                             ),
 
 
-def lightbgm():
-    parameters = {'n_jobs': [2],
+def lightgbm():
+    parameters = {'n_jobs': [1],
                   'n_estimators': [500, 1000],
                   'num_leaves': [60, 70, 80, 90, 110, 120, 140],
-                  'learning_rate': [0.01, 0.025, 0.05, 0.1],  # 0.015,
-                  'max_depth': [5, 7, 9, 12, 15],  # 3, 17
+                  'learning_rate': [0.01, 0.015, 0.025, 0.05, 0.1],
+                  'max_depth': [5, 7, 9, 12, 15, 17],  # 3
                   'min_child_weight': [1, 3, 5],  # 7
                   # 'subsample': [0.6, 0.7, 0.8, 1.0],  # 0.9,
                   # 'colsample_bytree': [0.6, 0.7, 0.8, 1.0],  # 0.9,
@@ -115,7 +115,7 @@ def grid_search(clf):
 
 
 if __name__ == '__main__':
-    grid_search(lightbgm())
+    grid_search(lightgbm())
 
     # train_data = read_train_join_mall()
     # train_data = train_data.loc[train_data['mall_id'] == 'm_6803']
