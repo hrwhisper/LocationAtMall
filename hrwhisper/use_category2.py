@@ -19,7 +19,7 @@ class CategoryToVec2(XXToVec):
 
     def __init__(self):
         super().__init__('./feature_save/time_features_{}_{}.pkl')
-        self.k = 1
+        self.k = 2
 
     def _do_transform(self, data):
         d = data.join(self.TRAIN_CATEGORY.set_index('row_id'), on='row_id', rsuffix='_train')

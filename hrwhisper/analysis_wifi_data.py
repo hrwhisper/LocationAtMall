@@ -145,7 +145,7 @@ def wifi_empty_statics():
     """
     Wifi那一栏没有为空的
     """
-    train_data = read_test_data() # read_train_join_mall()
+    train_data = read_test_data()  # read_train_join_mall()
     counter = collections.Counter()
     for mall_id in train_data['mall_id'].unique():
         data = train_data[train_data['mall_id'] == mall_id]
@@ -158,9 +158,34 @@ def wifi_empty_statics():
         print(mall_id, cnt)
 
 
+def wifi_apperance_days(mall_id='m_1621'):
+    import pandas as pd
+    import numpy as np
+    _train_data = read_train_join_mall()
+    train_data = _train_data.loc[_train_data['mall_id'] == mall_id]
+    train_data = train_data.assign(time_stamp=pd.to_datetime(train_data['time_stamp']))
+    train_data['time_stamp'] = train_data['time_stamp'].dt.day
+    total_count = [collections.defaultdict(set) for _ in range(31)]
+    bssids = set()
+    for shop_id, day, wifi_infos in zip(train_data['shop_id'], train_data['time_stamp'], train_data['wifi_infos']):
+        for wifi_info in wifi_infos.split(';'):
+            bssid, _, _ = wifi_info.split('|')
+            bssids.add(bssid)
+            total_count[day - 1][bssid].add(shop_id)
+
+    cnt = 0
+    for bssid in sorted(bssids):
+        t = np.array([len(total_count[i][bssid]) for i in range(31)])
+        if np.count_nonzero(t) > 7:
+            print(t)
+            cnt += 1
+    print(cnt, len(bssids))
+
+
 if __name__ == '__main__':
     # many_mall_has_same_bssid()
     # check_low()
     # wifi_co_occurrence_analysis()
-    _wifi_co_occurrence(read_train_join_mall())
+    # _wifi_co_occurrence(read_train_join_mall())
     # wifi_empty_statics()
+    wifi_apperance_days()

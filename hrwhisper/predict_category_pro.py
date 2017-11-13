@@ -151,7 +151,7 @@ def recovery_probability_from_pkl():
 def train_test():
     task = CategoryPredicted()
     func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), PriceToVec()]
-    task.train_test(func, 'category_id')
+    task.train_test(func, 'category_id', fold=10)
 
 
 if __name__ == '__main__':

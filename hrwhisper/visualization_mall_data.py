@@ -22,9 +22,16 @@ def show_plt():
 
 
 def only_mall_visualization(mall_id=None):
+    """
+    根据经纬度信息，画mall
+    若给定mall_id则画特定mall否则画全部mall
+    :param mall_id:  str
+    :return:
+    """
     train_data = read_mall_data()  # read_train_join_mall()
     if mall_id:
         train_data = train_data[train_data['mall_id'] == mall_id]
+
     x = train_data['latitude']
     y = train_data['longitude']
 
@@ -73,6 +80,9 @@ def shop_mall_visualization(mall_id='m_4572'):
 
 
 def mall_shop_day_sales_volume(mall_id='m_1621'):
+    """
+    画出某店铺的每日销量
+    """
     _train_data = read_train_join_mall()
     train_data = _train_data.loc[_train_data['mall_id'] == mall_id]
     train_data = train_data.assign(time_stamp=pd.to_datetime(train_data['time_stamp']))
