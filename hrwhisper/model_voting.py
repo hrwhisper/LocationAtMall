@@ -16,6 +16,11 @@
     ['random forest 0.91828', 'binary random forest 0.91813', 'binary xgb 0.9147'] weights = [10, 9, 6]
     Mean: 0.920985617387946
     online:0.9234 比上面的略高
+
+    ['random forest 0.9185', 'binary random forest 0.91813', 'binary xgb 0.9147'] weights = [10, 9, 6]
+    Mean: 0.9210399096493549
+    online:0.9237
+
 """
 
 import pandas as pd
@@ -67,12 +72,12 @@ class ModelVoting(ModelBase):
 
 
 def train_test():
-    models = ['random forest 0.91828', 'binary random forest 0.91813', 'binary xgb 0.9147']
-    weights = [10, 9, 6]  # Mean: 0.920985617387946 [10, 9, 6]
+    models = ['random forest 0.9185', 'binary random forest 0.91813', 'binary xgb 0.9147']
+    weights = [10, 9, 6]
     print(models, weights)
     task = ModelVoting(models, weights=weights)
     task.train_test(vec_func=None)
-    # task.train_and_on_test_data(vec_func=None)
+    task.train_and_on_test_data(vec_func=None)
 
 
 if __name__ == '__main__':

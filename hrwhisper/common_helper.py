@@ -238,12 +238,11 @@ class ModelBase(object):
         }
 
     @staticmethod
-    def trained_and_predict_location(cls, X_train, y_train, X_test, y_test=None):
+    def trained_and_predict_location(clf, X_train, y_train, X_test, y_test=None, predicted_proba=False):
         print('fitting....')
-        cls = cls.fit(X_train, y_train)
+        clf = clf.fit(X_train, y_train)
         print('predict....')
-        predicted = cls.predict(X_test)
-        return predicted
+        return clf.predict(X_test) if not predicted_proba else clf.predict_proba(X_test)
 
     def _multi_process_trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data,
                                                             test_label=None):

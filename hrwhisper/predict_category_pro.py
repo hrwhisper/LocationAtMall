@@ -8,13 +8,15 @@
 import os
 
 import numpy as np
+import pandas as pd
 from sklearn import preprocessing
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
+from sklearn.multiclass import OneVsRestClassifier
 
-from common_helper import ModelBase, DataVector
+from common_helper import ModelBase, DataVector, safe_dump_model, safe_save_csv_result
 from parse_data import read_train_join_mall, read_test_data
 from use_location import LocationToVec
 from use_location2 import LocationToVec2
@@ -28,17 +30,19 @@ from use_wifi_kstrong import WifiKStrongToVec
 
 class CategoryPredicted(ModelBase):
     def __init__(self):
-        super().__init__()
-        self.feature_save_path = './feature_save/predicted_category_pro.csv'
+        super().__init__(save_model_base_path='./feature_save/category/')
 
     def _get_classifiers(self):
         """
         :return: dict. {name:classifier}
         """
-        return {
-            'random forest': RandomForestClassifier(n_jobs=self.n_jobs, n_estimators=400, bootstrap=False,
-                                                    random_state=self._random_state, class_weight='balanced'),
-        }
+        return RandomForestClassifier(n_jobs=self.n_jobs,
+                                      n_estimators=400,
+                                      bootstrap=False,
+                                      min_samples_split=4,
+                                      min_samples_leaf=1,
+                                      random_state=self._random_state,
+                                      class_weight='balanced')
 
     def train_test(self, vec_func, target_column='category_id', fold=5):
         """
@@ -51,78 +55,71 @@ class CategoryPredicted(ModelBase):
         # ------input data -----------
         _train_data = read_train_join_mall()
         _train_data = _train_data.sort_values(by='time_stamp')
-        _train_label = _train_data[target_column].values
         _test_data = read_test_data()
 
-        le = preprocessing.LabelEncoder().fit(_train_label)
-        # print(le.classes_)
-        _train_label = le.transform(_train_label)
+        for mall_id in _train_data['mall_id'].unique():
+            train_data = _train_data.loc[_train_data['mall_id'] == mall_id]
+            train_label = train_data[target_column].values
+            test_data = _test_data.loc[_test_data['mall_id'] == mall_id]
 
-        kf = KFold(n_splits=fold, random_state=self._random_state)
-        m, n = _train_data.shape[0], len(le.classes_)
-        oof_train = np.zeros((m, n))
-        oof_test = np.zeros((m, n))
-        print(m, n)
+            label_encoder = preprocessing.LabelEncoder()
+            train_label = label_encoder.fit_transform(train_label)
 
-        for i, (train_index, test_index) in enumerate(kf.split(_train_data)):
-            print(i)
-            self._trained_and_predict(vec_func, _train_data, _train_label, _test_data, oof_train, oof_test,
-                                      train_index, test_index)
-        oof_test /= fold
+            kf = KFold(n_splits=fold, random_state=self._random_state)
 
-        joblib.dump(oof_train, self.feature_save_path + '_oof_train.pkl', compress=3)
-        joblib.dump(oof_test, self.feature_save_path + '_oof_test.pkl', compress=3)
+            oof_train = np.zeros((train_data.shape[0], len(label_encoder.classes_)))
+            oof_test = np.zeros((test_data.shape[0], len(label_encoder.classes_)))
 
-        with open(self.feature_save_path, 'w') as f:
-            f.write('row_id,{}\n'.format(','.join(str(i) for i in range(n))))
-            for i, row_id in enumerate(_train_data['row_id']):
-                f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_train[i]))))
-            for i, row_id in enumerate(_test_data['row_id']):
-                f.write('{},{}\n'.format(row_id, ','.join(list(str(x) for x in oof_test[i]))))
-        print('done')
+            for i, (train_index, test_index) in enumerate(kf.split(train_data)):
+                self._trained_and_predict(vec_func, train_data, train_label, test_data, train_index, test_index,
+                                          oof_train, oof_test, i, mall_id)
+            oof_test /= fold
+
+            cur_save_path = '{}/{}'.format(self.SAVE_MODEL_BASE_PATH, mall_id)
+
+            safe_dump_model(oof_train, cur_save_path + '_train.pkl')
+            safe_dump_model(oof_test, cur_save_path + '_test.pkl')
+
+            row_ids = pd.DataFrame(train_data['row_id'].values, columns=['row_id'])
+            oof_train = pd.DataFrame(oof_train, columns=label_encoder.classes_)
+            safe_save_csv_result(pd.concat([row_ids, oof_train], axis=1).set_index('row_id'),
+                                 cur_save_path + '_train.csv')
+
+            row_ids = pd.DataFrame(test_data['row_id'].values, columns=['row_id'])
+            oof_test = pd.DataFrame(oof_test, columns=label_encoder.classes_)
+            safe_save_csv_result(pd.concat([row_ids, oof_test], axis=1).set_index('row_id'),
+                                 cur_save_path + '_test.csv')
 
     def _trained_and_predict(self, vec_func, _train_data, _train_label, R_X_test,
-                             oof_train, oof_test, _train_index, _test_index):
-        mall_id_list = sorted(list(_train_data.iloc[_train_index]['mall_id'].unique()))
-        _train_index = set(_train_index)
-        _test_index = set(_test_index)
-        clf = list(self._get_classifiers().values())[0]
-        for ri, mall_id in enumerate(mall_id_list):
-            # 先得到当前商场的所有下标，然后和训练的下标做交集才对。
-            index = set(np.where(_train_data['mall_id'] == mall_id)[0])
+                             train_index, test_index, oof_train, oof_test, cur_fold, mall_id):
 
-            train_index = np.array(list(_train_index & index))
-            test_index = np.array(list(_test_index & index))
+        fold_X_train, fold_y_train = _train_data.iloc[train_index], _train_label[train_index]
+        fold_X_test, fold_y_test = _train_data.iloc[test_index], _train_label[test_index]
 
-            data = _train_data
-            label = _train_label
+        assert len(fold_X_train['mall_id'].unique()) == 1
 
-            fold_X_train, fold_y_train = data.iloc[train_index], label[train_index]
-            fold_X_test, fold_y_test = data.iloc[test_index], label[test_index]
+        X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, vec_func, fold_X_train,
+                                                                            fold_y_train, fold_X_test,
+                                                                            fold_y_test)
 
-            assert len(fold_X_train['mall_id'].unique()) == 1
+        clf = self._get_classifiers()
+        clf.fit(X_train, y_train)
 
-            X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, vec_func, fold_X_train,
-                                                                                fold_y_train, fold_X_test,
-                                                                                fold_y_test)
+        res = clf.predict_proba(X_test)
+        res[np.isnan(res)] = 0
+        oof_train[np.ix_(test_index, clf.classes_)] = res
 
-            clf.fit(X_train, y_train)
+        predicted = clf.predict(X_test)
+        score = accuracy_score(y_test, predicted)
 
-            t = set(list(clf.classes_))
-            other_index = np.array([i for i in range(oof_train.shape[1]) if i not in t])
-            oof_train[np.ix_(test_index, clf.classes_)] = clf.predict_proba(X_test)
-            oof_train[np.ix_(test_index, other_index)] = 0
+        X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
 
-            predicted = clf.predict(X_test)
+        res = clf.predict_proba(X_test)
+        # set the inf to zero. OneVsRestClassifier has done normalized, it cause some value to inf.
+        res[np.isnan(res)] = 0
+        oof_test[:, clf.classes_] += res
 
-            score = accuracy_score(y_test, predicted)
-            print(ri, mall_id, score)
-
-            X_test, _ = DataVector.data_to_vec(mall_id, vec_func, R_X_test, None, is_train=False)
-
-            test_index = np.where(R_X_test['mall_id'] == mall_id)[0]
-            oof_test[np.ix_(test_index, clf.classes_)] += clf.predict_proba(X_test)
-            oof_test[np.ix_(test_index, other_index)] = 0
+        print('mall_id: {}  cur_fold: {}   score: {}'.format(mall_id, cur_fold, score))
 
 
 def recovery_probability_from_pkl():
