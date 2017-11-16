@@ -21,6 +21,14 @@
     Mean: 0.9210399096493549
     online:0.9237
 
+    ['random forest 0.9198', 'binary random forest 0.91813', 'binary xgb 0.9147'] [1, 0.8, 0.4]
+    Mean: 0.9221356685641695
+    online: 0.9243
+
+    ['random forest 0.9198', 'binary random forest 0.9200', 'binary xgb 0.9147'] [0.98, 1, 0.47]
+    Mean: 0.9232737732023647
+    online: 0.9264
+
 """
 
 import pandas as pd
@@ -72,9 +80,9 @@ class ModelVoting(ModelBase):
 
 
 def train_test():
-    models = ['random forest 0.9185', 'binary random forest 0.91813', 'binary xgb 0.9147']
-    weights = [10, 9, 6]
-    print(models, weights)
+    models = ['random forest 0.9198', 'binary random forest 0.9200', 'binary xgb 0.9147']
+    weights = [0.98, 1, 0.47]
+    print(models, weights)  # Mean: 0.9232737732023647
     task = ModelVoting(models, weights=weights)
     task.train_test(vec_func=None)
     task.train_and_on_test_data(vec_func=None)
