@@ -13,6 +13,7 @@ from sklearn.model_selection import KFold
 
 from common_helper import ModelBase, DataVector
 from parse_data import read_train_join_mall, read_test_data
+from use_category2 import CategoryToVec2
 from use_location2 import LocationToVec2
 from use_price import PriceToVec
 from use_strong_wifi import WifiStrongToVec
@@ -24,17 +25,17 @@ from use_wifi_kstrong import WifiKStrongToVec
 class CategoryPredicted(ModelBase):
     def __init__(self):
         super().__init__()
-        self.feature_save_path = './feature_save/predicted_price2.csv'
+        self.feature_save_path = './feature_save/predicted_price3.csv'
 
     def _get_classifiers(self):
         """
         :return: dict. {name:classifier}
         """
         return {
-            'RandomForestRegressor ': RandomForestRegressor(n_estimators=100, n_jobs=self.n_jobs)
+            'RandomForestRegressor ': RandomForestRegressor(n_estimators=100, n_jobs=self.n_jobs, random_state=42)
         }
 
-    def train_test(self, vec_func, target_column='price', fold=5):
+    def train_test(self, vec_func, target_column='price', fold=10):
         """
 
         :param vec_func: list of vector function
@@ -127,8 +128,8 @@ class CategoryPredicted(ModelBase):
 
 def train_test():
     task = CategoryPredicted()
-    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec()]
-    task.train_test(func, 'price')
+    func = [LocationToVec2(), WifiToVec(), WifiStrongToVec(), WifiKStrongToVec(), CategoryToVec2()]
+    task.train_test(func, 'price', fold=20)
     # task.train_and_on_test_data(func, 'price')
 
 
@@ -141,7 +142,7 @@ def recovery_price_from_pkl():
     oof_test = joblib.load('./feature_save/predicted_price.csv_oof_test.pkl')
     print(oof_train.shape, _train_data.shape)
     print(oof_test.shape, _test_data.shape)
-    print(oof_train[348573])
+
     with open('./feature_save/predicted_price.csv', 'w') as f:
         f.write('row_id,p_price\n')
         for row_id, p in zip(_train_data['row_id'], oof_train):
