@@ -14,16 +14,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
-from sklearn.multiclass import OneVsRestClassifier
 
 from common_helper import ModelBase, DataVector, safe_dump_model, safe_save_csv_result
 from parse_data import read_train_join_mall, read_test_data
-from use_location import LocationToVec
-from use_location2 import LocationToVec2
+from use_location import LocationToVec2
 from use_price import PriceToVec
 from use_strong_wifi import WifiStrongToVec
-
-from use_time import TimeToVec
 from use_wifi import WifiToVec
 from use_wifi_kstrong import WifiKStrongToVec
 

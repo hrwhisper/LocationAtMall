@@ -7,9 +7,7 @@ import time
 
 import pandas as pd
 import numpy as np
-from multiprocessing import Process, Queue
 from scipy import sparse
-from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
@@ -126,88 +124,6 @@ class DataVector(object):
         return X_train, y_train, X_test, y_test
 
 
-class ModelDataVector(object):
-    def __init__(self, vec_func, train_data, train_label, test_data, test_label,
-                 train_queue: Queue, report_queue: Queue):
-        super().__init__()
-        self.vec_func = vec_func
-        self.train_data = train_data
-        self.train_label = train_label
-        self.test_data = test_data
-        self.test_label = test_label
-        self.train_queue = train_queue
-        self.report_queue = report_queue
-
-    def run(self):
-        for ri, mall_id in enumerate(self.train_data['mall_id'].unique()):
-            print('{} data to vector'.format(mall_id))
-
-            X_train, y_train, X_test, y_test = DataVector.train_and_test_to_vec(mall_id, self.vec_func, self.train_data,
-                                                                                self.train_label, self.test_data,
-                                                                                self.test_label)
-            self.train_queue.put((mall_id, X_train, y_train, X_test))
-            row_id = self.test_data[self.test_data['mall_id'] == mall_id]['row_id']
-            self.report_queue.put((mall_id, ri, y_test, row_id))
-
-        # end
-        self.train_queue.put(None)
-        self.report_queue.put(None)
-
-
-class ModelTrainAndPredict(Process):
-    def __init__(self, classifier, train_queue, result_queue):
-        super().__init__()
-        self.classifier = classifier
-        self.train_queue = train_queue
-        self.result_queue = result_queue
-
-    def run(self):
-        while True:
-            t = self.train_queue.get()
-            if t is None: break
-            mall_id, X_train, y_train, X_test = t
-            print('{} fit'.format(mall_id))
-            clf = clone(self.classifier)
-            clf.fit(X_train, y_train)
-            print('{} predict'.format(mall_id))
-            predicted = clf.predict(X_test)
-            self.result_queue.put(predicted)
-            del clf
-            del X_train
-            del y_train
-
-
-class ModelReport(Process):
-    def __init__(self, report_queue, result_queue, ans_queue):
-        super().__init__()
-        self.report_queue = report_queue
-        self.result_queue = result_queue
-        self.ans_queue = ans_queue
-
-    def run(self):
-        ans = {}
-        cnt = total_score = 0
-        while True:
-            t = self.report_queue.get()
-            if t is None: break
-            mall_id, ri, y_test, row_id = t
-            predicted = self.result_queue.get()
-            cnt += 1
-            if y_test is not None:
-                score = accuracy_score(y_test, predicted)
-                total_score += score
-                print("{} {} {}".format(ri, mall_id, score))
-            else:
-                print("{} {}".format(ri, mall_id))
-
-            for row_id, label in zip(row_id, predicted):
-                ans[row_id] = label
-            del predicted
-
-        print('mean score', total_score / cnt)
-        self.ans_queue.put(ans)
-
-
 class ModelBase(object):
     """
         多分类
@@ -244,28 +160,6 @@ class ModelBase(object):
         print('predict....')
         return clf.predict(X_test) if not predicted_proba else clf.predict_proba(X_test)
 
-    def _multi_process_trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data,
-                                                            test_label=None):
-        maxsize = 3
-        train_queue, predict_queue = Queue(maxsize), Queue(maxsize)
-        result_queue, report_queue = Queue(maxsize), Queue(maxsize)
-        ans_queue = Queue()
-
-        model_data_vector = ModelDataVector(vec_func, train_data, train_label, test_data, test_label, train_queue,
-                                            report_queue)
-
-        model_train = ModelTrainAndPredict(list(self._get_classifiers().values())[0], train_queue, result_queue)
-        model_report = ModelReport(report_queue, result_queue, ans_queue)
-
-        model_train.start()
-        model_report.start()
-        model_data_vector.run()
-
-        # model_train.join()
-        # model_predict.join()
-        # model_report.join()
-        ans = ans_queue.get()
-        return ans
 
     def _single_trained_by_mall_and_predict_location(self, vec_func, train_data, train_label, test_data,
                                                      test_label=None):
@@ -320,11 +214,7 @@ class ModelBase(object):
         :param test_label:
         :return:
         """
-        if self.use_multiprocess:
-            return self._multi_process_trained_by_mall_and_predict_location(vec_func, train_data, train_label,
-                                                                            test_data, test_label)
-        else:
-            return self._single_trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data,
+        return self._single_trained_by_mall_and_predict_location(vec_func, train_data, train_label, test_data,
                                                                      test_label)
 
     def train_test(self, vec_func, target_column='shop_id'):

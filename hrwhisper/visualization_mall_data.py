@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from parse_data import read_train_join_mall, read_mall_data
-from use_location import center_latitudes_and_longitudes, get_distance_by_latitude_and_longitude
+from use_location import center_latitudes_and_longitudes
 
 
 def show_plt():

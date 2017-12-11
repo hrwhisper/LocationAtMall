@@ -12,7 +12,7 @@ from xgboost import XGBClassifier
 
 from common_helper import get_recommend_cpu_count, DataVector
 from parse_data import read_train_join_mall
-from use_location2 import LocationToVec2
+from use_location import LocationToVec2
 from use_price import PriceToVec
 from use_strong_wifi import WifiStrongToVec
 from use_wifi import WifiToVec
