@@ -11,7 +11,7 @@ from datetime import datetime
 from scipy.sparse import csr_matrix
 
 from common_helper import ModelBase, XXToVec
-from use_location import get_distance_by_latitude_and_longitude
+from analysis_mall_location_data import get_distance_by_latitude_and_longitude
 
 '''
 k=2 [LocationToVec2(), WifiToVec(), WifiKStrongToVec()] 0.9113118530195635

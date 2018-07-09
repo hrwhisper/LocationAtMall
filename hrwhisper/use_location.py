@@ -7,13 +7,12 @@
 """
 import collections
 from datetime import datetime
-from math import sin, cos, atan2, sqrt, pi
 
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-import gpxpy.geo
 from scipy.sparse import csr_matrix
 
+from analysis_mall_location_data import get_distance_by_latitude_and_longitude
 from common_helper import ModelBase, XXToVec
 
 """
@@ -26,32 +25,6 @@ RandomForestClassifier(bootstrap=True, class_weight='balanced',
             n_estimators=400, n_jobs=-1, oob_score=False, random_state=42,
             verbose=0, warm_start=False) Mean: 0.9093965396494474
 """
-
-
-def get_distance_by_latitude_and_longitude(lat1, lon1, lat2, lon2):
-    return gpxpy.geo.haversine_distance(lat1, lon1, lat2, lon2)
-
-
-def center_latitudes_and_longitudes(geo_coordinates):
-    """
-
-    :param geo_coordinates: [[latitude,longtitude],...]
-    :return: [latitude,longitudes]
-    """
-    x = y = z = 0
-    for (lat, lng) in geo_coordinates:
-        lat, lng = lat * pi / 180, lng * pi / 180
-        x += cos(lat) * cos(lng)
-        y += cos(lat) * sin(lng)
-        z += sin(lat)
-
-    x = x / len(geo_coordinates)
-    y = y / len(geo_coordinates)
-    z = z / len(geo_coordinates)
-    lng = atan2(y, x)
-    hyp = sqrt(x ** 2 + y ** 2)
-    lat = atan2(z, hyp)
-    return lat * 180 / pi, lng * 180 / pi
 
 
 class LocationToVec2(XXToVec):

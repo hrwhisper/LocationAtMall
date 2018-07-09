@@ -183,9 +183,9 @@ def wifi_apperance_days(mall_id='m_1621'):
 
 
 if __name__ == '__main__':
-    # many_mall_has_same_bssid()
-    # check_low()
-    # wifi_co_occurrence_analysis()
-    # _wifi_co_occurrence(read_train_join_mall())
-    # wifi_empty_statics()
+    many_mall_has_same_bssid()
+    check_low()
+    wifi_co_occurrence_analysis()
+    _wifi_co_occurrence(read_train_join_mall())
+    wifi_empty_statics()
     wifi_apperance_days()
